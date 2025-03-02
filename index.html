@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Surf Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1E90FF, #87CEEB);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .status-panel {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .meter {
+            height: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .meter-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        
+        .paddle-meter .meter-fill {
+            background: linear-gradient(to right, #FFD54F, #FF9800);
+        }
+        
+        .progress-meter .meter-fill {
+            background: linear-gradient(to right, #81C784, #4CAF50);
+        }
+        
+        .balance-indicator {
+            width: 10px;
+            height: 15px;
+            background: white;
+            border-radius: 5px;
+            position: absolute;
+            top: 0;
+            transform: translateX(-50%);
+            transition: left 0.2s ease;
+        }
+        
+        .controls-info {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .message {
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        @keyframes waveGlow {
+            0% { filter: drop-shadow(0 0 5px rgba(135, 206, 250, 0.5)); }
+            50% { filter: drop-shadow(0 0 15px rgba(135, 206, 250, 0.8)); }
+            100% { filter: drop-shadow(0 0 5px rgba(135, 206, 250, 0.5)); }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header fade-in">
+            <h1 class="title">Surf Simulator</h1>
+        </div>
+        
+        <div class="status-panel fade-in">
+            <div>
+                <span class="badge" style="background: #3F51B5;">Level: <span id="level-display">1</span></span>
+                <span class="badge" style="background: #4CAF50;">Score: <span id="score-display">0</span></span>
+            </div>
+            <div>
+                <span class="badge" style="background: #FF5722;">Wipeouts: <span id="wipeout-display">0</span></span>
+            </div>
+        </div>
+        
+        <div class="fade-in">
+            <div>
+                <div style="display: flex; justify-content: space-between;">
+                    <small>Paddle Power</small>
+                    <small><span id="paddle-power-text">0</span>%</small>
+                </div>
+                <div class="meter paddle-meter">
+                    <div id="paddle-power-bar" class="meter-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+            
+            <div>
+                <div style="display: flex; justify-content: space-between;">
+                    <small>Balance</small>
+                    <small id="balance-text">Centered</small>
+                </div>
+                <div class="meter">
+                    <div id="balance-indicator" class="balance-indicator" style="left: 50%;"></div>
+                </div>
+            </div>
+            
+            <div>
+                <div style="display: flex; justify-content: space-between;">
+                    <small>Level Progress</small>
+                    <small><span id="progress-text">0</span>%</small>
+                </div>
+                <div class="meter progress-meter">
+                    <div id="level-progress-bar" class="meter-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <canvas id="game-canvas" width="800" height="480" class="fade-in"></canvas>
+        
+        <div id="message-box" class="message"></div>
+        
+        <div class="controls-info fade-in">
+            <strong>Controls:</strong> SPACE to paddle, UP ARROW to catch wave, LEFT/RIGHT ARROWS to balance
+        </div>
+    </div>
+
+    <script>
+        // Get elements
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        const levelDisplay = document.getElementById('level-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const wipeoutDisplay = document.getElementById('wipeout-display');
+        
+        const paddlePowerBar = document.getElementById('paddle-power-bar');
+        const paddlePowerText = document.getElementById('paddle-power-text');
+        const balanceIndicator = document.getElementById('balance-indicator');
+        const balanceText = document.getElementById('balance-text');
+        const levelProgressBar = document.getElementById('level-progress-bar');
+        const progressText = document.getElementById('progress-text');
+        
+        const messageBox = document.getElementById('message-box');
+        
+        // Game state
+        const game = {
+            active: true,
+            frameCount: 0,
+            player: {
+                x: 200,
+                y: 0,
+                paddlePower: 0,
+                onWave: false,
+                jumping: false,
+                balance: 0,
+                score: 0,
+                wipeouts: 0,
+                animation: {
+                    paddleFrame: 0,
+                    jumpFrame: 0,
+                    catchingWave: false,
+                    catchProgress: 0
+                }
+            },
+            level: {
+                current: 1,
+                distance: 0,
+                maxDistance: 1000,
+                progress: 0
+            },
+            wave: [],
+            waveHighlights: [],
+            waterParticles: [],
+            keysPressed: {},
+            difficulty: {
+                waveSpeed: 2,
+                turbulence: 0.3,
+                balanceDifficulty: 1
+            },
+            visuals: {
+                bigWave: {
+                    active: false,
+                    x: -100,
+                    height: 0,
+                    speed: 3,
+                    width: 300
+                }
+            }
+        };
+        
+        // Create surfboard with more details
+        function createSurfboard(width, height) {
+            const surfboard = document.createElement('canvas');
+            surfboard.width = width;
+            surfboard.height = height;
+            const sctx = surfboard.getContext('2d');
+            
+            // Board shape
+            const gradient = sctx.createLinearGradient(0, 0, width, 0);
+            gradient.addColorStop(0, '#F5F5F5');
+            gradient.addColorStop(0.5, '#FFFFFF');
+            gradient.addColorStop(1, '#F5F5F5');
+            
+            sctx.fillStyle = gradient;
+            sctx.beginPath();
+            sctx.moveTo(width * 0.1, height * 0.5);
+            sctx.bezierCurveTo(
+                width * 0.1, height * 0.3,
+                width * 0.3, 0,
+                width * 0.5, 0
+            );
+            sctx.bezierCurveTo(
+                width * 0.7, 0,
+                width * 0.9, height * 0.3,
+                width * 0.9, height * 0.5
+            );
+            sctx.bezierCurveTo(
+                width * 0.9, height * 0.7,
+                width * 0.7, height,
+                width * 0.5, height
+            );
+            sctx.bezierCurveTo(
+                width * 0.3, height,
+                width * 0.1, height * 0.7,
+                width * 0.1, height * 0.5
+            );
+            sctx.fill();
+            
+            // Board stripe
+            sctx.strokeStyle = '#4682B4';
+            sctx.lineWidth = 2;
+            sctx.beginPath();
+            sctx.moveTo(width * 0.3, height * 0.5);
+            sctx.lineTo(width * 0.7, height * 0.5);
+            sctx.stroke();
+            
+            return surfboard;
+        }
+        
+        // Create surfer with different poses
+        function createSurfer(width, height, pose) {
+            const surfer = document.createElement('canvas');
+            surfer.width = width;
+            surfer.height = height;
+            const sctx = surfer.getContext('2d');
+            
+            // Body color
+            sctx.fillStyle = '#FF6347';
+            
+            if (pose === 'standing') {
+                // Body
+                sctx.fillRect(width * 0.4, height * 0.3, width * 0.2, height * 0.4);
+                
+                // Head
+                sctx.beginPath();
+                sctx.arc(width * 0.5, height * 0.2, width * 0.1, 0, Math.PI * 2);
+                sctx.fill();
+                
+                // Arms
+                sctx.fillRect(width * 0.25, height * 0.35, width * 0.15, height * 0.1);
+                sctx.fillRect(width * 0.6, height * 0.35, width * 0.15, height * 0.1);
+                
+                // Legs
+                sctx.fillRect(width * 0.4, height * 0.7, width * 0.08, height * 0.3);
+                sctx.fillRect(width * 0.52, height * 0.7, width * 0.08, height * 0.3);
+            } else if (pose === 'paddling') {
+                // Body (lying down)
+                sctx.fillRect(width * 0.3, height * 0.4, width * 0.4, height * 0.2);
+                
+                // Head
+                sctx.beginPath();
+                sctx.arc(width * 0.7, height * 0.5, width * 0.1, 0, Math.PI * 2);
+                sctx.fill();
+                
+                // Arms (one up, one down for paddling animation)
+                if (game.frameCount % 20 < 10) {
+                    sctx.fillRect(width * 0.25, height * 0.3, width * 0.15, height * 0.1);
+                    sctx.fillRect(width * 0.25, height * 0.6, width * 0.15, height * 0.1);
+                } else {
+                    sctx.fillRect(width * 0.25, height * 0.35, width * 0.15, height * 0.1);
+                    sctx.fillRect(width * 0.25, height * 0.55, width * 0.15, height * 0.1);
+                }
+            } else if (pose === 'jumping') {
+                // Crouched body
+                sctx.fillRect(width * 0.4, height * 0.4, width * 0.2, height * 0.3);
+                
+                // Head
+                sctx.beginPath();
+                sctx.arc(width * 0.5, height * 0.3, width * 0.1, 0, Math.PI * 2);
+                sctx.fill();
+                
+                // Arms out
+                sctx.fillRect(width * 0.25, height * 0.45, width * 0.15, height * 0.1);
+                sctx.fillRect(width * 0.6, height * 0.45, width * 0.15, height * 0.1);
+                
+                // Bent legs
+                sctx.fillRect(width * 0.4, height * 0.7, width * 0.08, height * 0.2);
+                sctx.fillRect(width * 0.52, height * 0.7, width * 0.08, height * 0.2);
+            }
+            
+            return surfer;
+        }
+        
+        // Generate wave
+        function generateWave() {
+            game.wave = [];
+            for (let x = 0; x < 200; x += 0.5) {
+                game.wave.push({
+                    x: x,
+                    y: 5 * Math.sin(x * 0.1) + 2 * Math.sin(x * 0.2) + game.difficulty.turbulence * Math.random(),
+                    glowing: false
+                });
+            }
+        }
+        
+        // Create a big surfable wave
+        function createBigWave() {
+            game.visuals.bigWave.active = true;
+            game.visuals.bigWave.x = -100;
+            game.visuals.bigWave.height = 60 + game.level.current * 10;
+            game.visuals.bigWave.width = 300;
+            
+            // Add message
+            showMessage("Big wave approaching! Get ready to catch it!");
+        }
+        
+        // Water particle effect
+        function createWaterParticle(x, y, vx, vy) {
+            game.waterParticles.push({
+                x: x,
+                y: y,
+                vx: vx,
+                vy: vy,
+                size: Math.random() * 3 + 1,
+                life: 30 + Math.random() * 20,
+                alpha: 1
+            });
+        }
+        
+        // Show message
+        function showMessage(text, duration = 2000) {
+            messageBox.textContent = text;
+            messageBox.style.opacity = 1;
+            
+            setTimeout(() => {
+                messageBox.style.opacity = 0;
+            }, duration);
+        }
+        
+        // Handle key presses
+        document.addEventListener('keydown', function(event) {
+            game.keysPressed[event.key] = true;
+            
+            // Paddling with SPACE
+            if (event.key === ' ') {
+                if (game.player.onWave && !game.player.jumping) {
+                    // Jump when on wave
+                    game.player.jumping = true;
+                    game.player.jumpVelocity = 12;
+                    
+                    // Create jump splash effect
+                    for (let i = 0; i < 15; i++) {
+                        createWaterParticle(
+                            game.player.x, 
+                            canvas.height * 0.7, 
+                            Math.random() * 4 - 2, 
+                            -Math.random() * 5
+                        );
+                    }
+                } else if (!game.player.onWave) {
+                    // Paddle to build power
+                    game.player.paddlePower = Math.min(100, game.player.paddlePower + 5);
+                    
+                    // Create paddle splash
+                    if (game.frameCount % 5 === 0) {
+                        createWaterParticle(
+                            game.player.x - 30, 
+                            canvas.height * 0.7, 
+                            -Math.random() * 2, 
+                            -Math.random() * 2
+                        );
+                    }
+                }
+            }
+            
+            // Catch wave with UP ARROW
+            if (event.key === 'ArrowUp' && game.player.paddlePower > 50 && !game.player.onWave) {
+                // Start catch wave animation
+                game.player.animation.catchingWave = true;
+                game.player.animation.catchProgress = 0;
+            }
+        });
+        
+        document.addEventListener('keyup', function(event) {
+            game.keysPressed[event.key] = false;
+        });
+        
+        // Game loop
+        function gameLoop() {
+            // Update frame counter
+            game.frameCount++;
+            
+            // Periodically create big surfable waves
+            if (game.frameCount % 500 === 0 && !game.visuals.bigWave.active && !game.player.onWave) {
+                createBigWave();
+            }
+            
+            // Update big wave if active
+            if (game.visuals.bigWave.active) {
+                game.visuals.bigWave.x += game.visuals.bigWave.speed;
+                
+                // Check if wave is in catching position
+                if (game.visuals.bigWave.x > game.player.x - 50 && 
+                    game.visuals.bigWave.x < game.player.x + 50 &&
+                    game.player.paddlePower > 50 &&
+                    game.keysPressed['ArrowUp']) {
+                    
+                    // Start catching animation if not already catching
+                    if (!game.player.animation.catchingWave) {
+                        game.player.animation.catchingWave = true;
+                        game.player.animation.catchProgress = 0;
+                    }
+                }
+                
+                // Remove wave when it leaves screen
+                if (game.visuals.bigWave.x > canvas.width + 100) {
+                    game.visuals.bigWave.active = false;
+                }
+            }
+            
+            // Update catch wave animation
+            if (game.player.animation.catchingWave) {
+                game.player.animation.catchProgress += 0.05;
+                
+                // Create splash effects
+                if (game.frameCount % 3 === 0) {
+                    for (let i = 0; i < 3; i++) {
+                        createWaterParticle(
+                            game.player.x + (Math.random() * 60 - 30), 
+                            canvas.height * 0.7 - 10, 
+                            Math.random() * 4 - 2, 
+                            -Math.random() * 3
+                        );
+                    }
+                }
+                
+                // Complete catching animation
+                if (game.player.animation.catchProgress >= 1) {
+                    game.player.animation.catchingWave = false;
+                    game.player.onWave = true;
+                    
+                    // Message
+                    showMessage("You caught the wave! Use LEFT/RIGHT to balance!");
+                    
+                    // More splash effects for dramatic effect
+                    for (let i = 0; i < 30; i++) {
+                        createWaterParticle(
+                            game.player.x + (Math.random() * 80 - 40), 
+                            canvas.height * 0.7, 
+                            Math.random() * 6 - 3, 
+                            -Math.random() * 6
+                        );
+                    }
+                    
+                    // If caught big wave, give bonus
+                    if (game.visuals.bigWave.active && 
+                        game.visuals.bigWave.x > game.player.x - 100 && 
+                        game.visuals.bigWave.x < game.player.x + 100) {
+                        
+                        game.player.score += 200;
+                        scoreDisplay.textContent = game.player.score;
+                        showMessage("Perfect timing! Big wave bonus: +200 points!");
+                    }
+                }
+            }
+            
+            // Handle balance when on wave
+            if (game.player.onWave && !game.player.jumping) {
+                const balanceRate = 0.03 * game.difficulty.balanceDifficulty;
+                const recoveryRate = 0.01;
+                
+                if (game.keysPressed['ArrowLeft']) {
+                    game.player.balance = Math.max(-1, game.player.balance - balanceRate);
+                }
+                if (game.keysPressed['ArrowRight']) {
+                    game.player.balance = Math.min(1, game.player.balance + balanceRate);
+                }
+                
+                // Natural balance recovery
+                if (!game.keysPressed['ArrowLeft'] && !game.keysPressed['ArrowRight']) {
+                    if (game.player.balance > 0) {
+                        game.player.balance = Math.max(0, game.player.balance - recoveryRate);
+                    } else if (game.player.balance < 0) {
+                        game.player.balance = Math.min(0, game.player.balance + recoveryRate);
+                    }
+                }
+                
+                // Apply wave turbulence to balance
+                game.player.balance += (Math.random() - 0.5) * 0.02 * game.difficulty.turbulence;
+                
+                // Update balance UI
+                const balancePos = (game.player.balance + 1) * 50; // Convert -1...1 to 0...100%
+                balanceIndicator.style.left = `${balancePos}%`;
+                
+                if (Math.abs(game.player.balance) < 0.2) {
+                    balanceText.textContent = "Centered";
+                } else if (game.player.balance < 0) {
+                    balanceText.textContent = "Leaning Left";
+                } else {
+                    balanceText.textContent = "Leaning Right";
+                }
+                
+                // Check for wipeout
+                const wipeoutThreshold = 0.8;
+                const wipeoutChance = Math.pow(Math.abs(game.player.balance), 2) * 0.05;
+                
+                if (Math.abs(game.player.balance) > wipeoutThreshold && Math.random() < wipeoutChance) {
+                    // Wipeout!
+                    game.player.onWave = false;
+                    game.player.balance = 0;
+                    game.player.paddlePower = 0;
+                    game.player.wipeouts++;
+                    
+                    // Update UI
+                    balanceIndicator.style.left = '50%';
+                    balanceText.textContent = "Centered";
+                    wipeoutDisplay.textContent = game.player.wipeouts;
+                    
+                    // Show message
+                    showMessage("Wipeout! Paddle again to catch a wave.");
+                    
+                    // Create splash effect
+                    for (let i = 0; i < 40; i++) {
+                        createWaterParticle(
+                            game.player.x + (Math.random() * 60 - 30), 
+                            canvas.height * 0.7, 
+                            Math.random() * 8 - 4, 
+                            -Math.random() * 8
+                        );
+                    }
+                }
+            }
+            
+            // Handle jumping
+            if (game.player.jumping) {
+                game.player.jumpVelocity -= 0.5; // Gravity
+                game.player.y += game.player.jumpVelocity;
+                
+                // Land back on wave
+                if (game.player.y <= 0) {
+                    game.player.y = 0;
+                    game.player.jumping = false;
+                    
+                    // Create landing splash
+                    for (let i = 0; i < 20; i++) {
+                        createWaterParticle(
+                            game.player.x + (Math.random() * 60 - 30), 
+                            canvas.height * 0.7, 
+                            Math.random() * 4 - 2, 
+                            -Math.random() * 3
+                        );
+                    }
+                    
+                    // Add points for jump
+                    game.player.score += 50;
+                    scoreDisplay.textContent = game.player.score;
+                }
+            }
+            
+            // Paddle power decay
+            if (!game.keysPressed[' '] && !game.player.onWave) {
+                game.player.paddlePower = Math.max(0, game.player.paddlePower - 0.5);
+            }
+            
+            // Update paddle power UI
+            paddlePowerBar.style.width = `${game.player.paddlePower}%`;
+            paddlePowerText.textContent = Math.floor(game.player.paddlePower);
+            
+            // Update level progress when on wave
+            if (game.player.onWave) {
+                // Add distance
+                game.level.distance += 5;
+                
+                // Calculate progress
+                game.level.progress = game.level.distance / game.level.maxDistance;
+                
+                // Update UI
+                levelProgressBar.style.width = `${game.level.progress * 100}%`;
+                progressText.textContent = Math.floor(game.level.progress * 100);
+                
+                // Add score
+                if (game.frameCount % 10 === 0) {
+                    game.player.score += game.level.current;
+                    scoreDisplay.textContent = game.player.score;
+                }
+                
+                // Check level complete
+                if (game.level.distance >= game.level.maxDistance) {
+                    // Level up!
+                    game.level.current++;
+                    game.level.distance = 0;
+                    game.level.maxDistance *= 1.2;
+                    
+                    // Increase difficulty
+                    game.difficulty.waveSpeed += 0.2;
+                    game.difficulty.turbulence += 0.1;
+                    game.difficulty.balanceDifficulty += 0.1;
+                    
+                    // Reset player
+                    game.player.onWave = false;
+                    game.player.paddlePower = 0;
+                    
+                    // Update UI
+                    levelDisplay.textContent = game.level.current;
+                    levelProgressBar.style.width = '0%';
+                    progressText.textContent = '0';
+                    
+                    // Add bonus points
+                    game.player.score += 500;
+                    scoreDisplay.textContent = game.player.score;
+                    
+                    // Show message
+                    showMessage(`Level ${game.level.current} - Waves are getting bigger!`);
+                    
+                    // Generate new wave
+                    generateWave();
+                }
+            }
+            
+            // Update water particles
+            for (let i = game.waterParticles.length - 1; i >= 0; i--) {
+                const particle = game.waterParticles[i];
+                
+                // Move particle
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vy += 0.1; // Gravity
+                particle.life--;
+                particle.alpha = particle.life / 50;
+                
+                // Remove dead particles
+                if (particle.life <= 0) {
+                    game.waterParticles.splice(i, 1);
+                }
+            }
+            
+            // Move wave
+            for (let i = 0; i < game.wave.length; i++) {
+                game.wave[i].x -= game.difficulty.waveSpeed;
+                
+                // Create subtle wave animation
+                if (i % 5 === 0) {
+                    game.wave[i].y += Math.sin(game.frameCount * 0.05 + i * 0.1) * 0.05;
+                }
+                
+                // Add occasional glowing highlights
+                if (Math.random() < 0.001) {
+                    game.wave[i].glowing = true;
+                    
+                    // Add nearby points to create a patch
+                    for (let j = Math.max(0, i-3); j < Math.min(game.wave.length, i+3); j++) {
+                        if (Math.random() < 0.7) {
+                            game.wave[j].glowing = true;
+                        }
+                    }
+                }
+                
+                // Remove glowing effect after some time
+                if (game.wave[i].glowing && Math.random() < 0.05) {
+                    game.wave[i].glowing = false;
+                }
+            }
+            
+            // Remove off-screen wave points
+            game.wave = game.wave.filter(p => p.x > -5);
+            
+            // Add new wave points
+            const lastPoint = game.wave[game.wave.length - 1];
+            if (lastPoint && lastPoint.x < 195) {
+                const newX = lastPoint.x + 0.5;
+                const newY = 5 * Math.sin(newX * 0.1) + 
+                              2 * Math.sin(newX * 0.2) + 
+                              game.difficulty.turbulence * Math.random();
+                              
+                game.wave.push({ 
+                    x: newX, 
+                    y: newY,
+                    glowing: false
+                });
+            }
+            
+            // Render the game
+            render();
+            
+            // Continue game loop
+            if (game.active) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Render function
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+// Draw sky gradient
+const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.7);
+            skyGradient.addColorStop(0, '#1E90FF');
+            skyGradient.addColorStop(1, '#87CEEB');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.7);
+            
+            // Draw sun with glow
+            ctx.save();
+            
+            // Sun glow
+            const sunX = canvas.width * 0.8;
+            const sunY = canvas.height * 0.2;
+            const gradient = ctx.createRadialGradient(sunX, sunY, 20, sunX, sunY, 60);
+            gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+            gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 60, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Sun
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+            
+            // Draw simple clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            drawCloud(100 + Math.sin(game.frameCount * 0.01) * 5, 100, 60, 30);
+            drawCloud(300 + Math.sin(game.frameCount * 0.01 + 1) * 5, 70, 80, 40);
+            drawCloud(600 + Math.sin(game.frameCount * 0.01 + 2) * 5, 120, 70, 35);
+            
+            // Draw water base
+            const waterHeight = canvas.height * 0.7;
+            const waterGradient = ctx.createLinearGradient(0, waterHeight, 0, canvas.height);
+            waterGradient.addColorStop(0, '#4682B4');
+            waterGradient.addColorStop(1, '#36648B');
+            ctx.fillStyle = waterGradient;
+            ctx.fillRect(0, waterHeight, canvas.width, canvas.height - waterHeight);
+            
+            // Draw wave
+            if (game.wave.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(0, waterHeight);
+                
+                for (const point of game.wave) {
+                    const x = point.x * (canvas.width / 200);
+                    const y = waterHeight - (point.y * 5);
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.lineTo(canvas.width, waterHeight);
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+                
+                const waveGradient = ctx.createLinearGradient(0, waterHeight, 0, canvas.height);
+                waveGradient.addColorStop(0, '#87CEFA');
+                waveGradient.addColorStop(0.5, '#4682B4');
+                waveGradient.addColorStop(1, '#36648B');
+                ctx.fillStyle = waveGradient;
+                ctx.fill();
+                
+                // Add white foam at top of wave
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (const point of game.wave) {
+                    const x = point.x * (canvas.width / 200);
+                    const y = waterHeight - (point.y * 5);
+                    if (point === game.wave[0]) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.stroke();
+                
+                // Draw glowing wave parts
+                ctx.save();
+                ctx.beginPath();
+                let inGlowRegion = false;
+                let startX = 0;
+                
+                for (let i = 0; i < game.wave.length; i++) {
+                    const point = game.wave[i];
+                    const x = point.x * (canvas.width / 200);
+                    const y = waterHeight - (point.y * 5);
+                    
+                    if (point.glowing && !inGlowRegion) {
+                        inGlowRegion = true;
+                        startX = x;
+                        ctx.moveTo(x, y);
+                    } else if (point.glowing) {
+                        ctx.lineTo(x, y);
+                    } else if (!point.glowing && inGlowRegion) {
+                        inGlowRegion = false;
+                        
+                        // Draw glow effect
+                        ctx.shadowColor = '#87CEFA';
+                        ctx.shadowBlur = 10;
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                        
+                        ctx.shadowBlur = 0;
+                        ctx.beginPath();
+                    }
+                }
+                
+                if (inGlowRegion) {
+                    // Draw final glow section
+                    ctx.shadowColor = '#87CEFA';
+                    ctx.shadowBlur = 10;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+            }
+            
+            // Draw big surfable wave if active
+            if (game.visuals.bigWave.active) {
+                const waveX = game.visuals.bigWave.x;
+                const waveWidth = game.visuals.bigWave.width;
+                const waveHeight = game.visuals.bigWave.height;
+                
+                // Draw wave shape
+                ctx.save();
+                
+                // Wave glow effect
+                ctx.shadowColor = '#87CEFA';
+                ctx.shadowBlur = 15;
+                
+                const bigWaveGradient = ctx.createLinearGradient(
+                    waveX, waterHeight - waveHeight, 
+                    waveX, waterHeight
+                );
+                bigWaveGradient.addColorStop(0, '#87CEFA');
+                bigWaveGradient.addColorStop(1, '#4682B4');
+                
+                ctx.fillStyle = bigWaveGradient;
+                
+                // Draw wave curve
+                ctx.beginPath();
+                ctx.moveTo(waveX - waveWidth/2, waterHeight);
+                
+                // Control points for curve
+                ctx.bezierCurveTo(
+                    waveX - waveWidth/3, waterHeight,
+                    waveX - waveWidth/6, waterHeight - waveHeight * 0.8,
+                    waveX, waterHeight - waveHeight
+                );
+                
+                ctx.bezierCurveTo(
+                    waveX + waveWidth/6, waterHeight - waveHeight * 0.6,
+                    waveX + waveWidth/3, waterHeight - waveHeight * 0.3,
+                    waveX + waveWidth/2, waterHeight
+                );
+                
+                ctx.lineTo(waveX - waveWidth/2, waterHeight);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Wave foam/crest
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(waveX - waveWidth/6, waterHeight - waveHeight * 0.8);
+                ctx.bezierCurveTo(
+                    waveX - waveWidth/12, waterHeight - waveHeight * 0.9,
+                    waveX, waterHeight - waveHeight,
+                    waveX + waveWidth/12, waterHeight - waveHeight * 0.9
+                );
+                ctx.stroke();
+                
+                // Small foam particles
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                for (let i = 0; i < 15; i++) {
+                    const foamX = waveX + Math.cos(game.frameCount * 0.1 + i) * waveWidth/4;
+                    const foamY = waterHeight - waveHeight * 0.9 + Math.sin(game.frameCount * 0.1 + i * 2) * 5;
+                    const size = 2 + Math.random() * 3;
+                    
+                    ctx.beginPath();
+                    ctx.arc(foamX, foamY, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+            
+            // Draw water particles
+            for (const particle of game.waterParticles) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Find wave height at player position
+            let waveY = waterHeight;
+            let onSlope = false;
+            let slopeAngle = 0;
+            
+            // Check if player is on big wave
+            if (game.visuals.bigWave.active && 
+                game.player.x > game.visuals.bigWave.x - game.visuals.bigWave.width/2 && 
+                game.player.x < game.visuals.bigWave.x + game.visuals.bigWave.width/2) {
+                
+                // Calculate position on big wave
+                const relativeX = (game.player.x - (game.visuals.bigWave.x - game.visuals.bigWave.width/2)) / game.visuals.bigWave.width;
+                
+                if (relativeX < 0.5) {
+                    // First half of wave (rising)
+                    const waveProgress = relativeX * 2; // 0 to 1
+                    waveY = waterHeight - waveProgress * game.visuals.bigWave.height;
+                    onSlope = true;
+                    slopeAngle = -Math.PI/6; // 30 degrees upward
+                } else {
+                    // Second half of wave (falling)
+                    const waveProgress = (relativeX - 0.5) * 2; // 0 to 1
+                    waveY = waterHeight - (1 - waveProgress) * game.visuals.bigWave.height;
+                    onSlope = true;
+                    slopeAngle = Math.PI/6; // 30 degrees downward
+                }
+            } else {
+                // Check against regular wave
+                for (const point of game.wave) {
+                    const pointX = point.x * (canvas.width / 200);
+                    if (Math.abs(pointX - game.player.x) < 10) {
+                        waveY = waterHeight - (point.y * 5);
+                        break;
+                    }
+                }
+            }
+            
+            // Draw player (with appropriate state - paddling, catching wave, surfing, jumping)
+            ctx.save();
+            
+            const surfboardWidth = 60;
+            const surfboardHeight = 15;
+            const surferWidth = 40;
+            const surferHeight = 60;
+            
+            if (game.player.onWave) {
+                if (game.player.jumping) {
+                    // Draw jumping player
+                    const jumpY = waveY - surfboardHeight - game.player.y;
+                    
+                    // Draw surfboard
+                    if (game.frameCount % 10 < 5) {
+                        // Animate surfboard tilting in air
+                        ctx.save();
+                        ctx.translate(game.player.x, jumpY);
+                        ctx.rotate(Math.PI * 0.05);
+                        ctx.drawImage(createSurfboard(surfboardWidth, surfboardHeight), -surfboardWidth/2, -surfboardHeight/2);
+                        ctx.restore();
+                    } else {
+                        ctx.save();
+                        ctx.translate(game.player.x, jumpY);
+                        ctx.rotate(-Math.PI * 0.05);
+                        ctx.drawImage(createSurfboard(surfboardWidth, surfboardHeight), -surfboardWidth/2, -surfboardHeight/2);
+                        ctx.restore();
+                    }
+                    
+                    // Draw surfer in jump pose
+                    ctx.drawImage(
+                        createSurfer(surferWidth, surferHeight, 'jumping'), 
+                        game.player.x - surferWidth/2, 
+                        jumpY - surferHeight
+                    );
+                    
+                    // Show trajectory path
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(game.player.x, waveY - surfboardHeight);
+                    ctx.quadraticCurveTo(
+                        game.player.x, waveY - surfboardHeight - game.player.y/2,
+                        game.player.x, jumpY
+                    );
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    // Draw riding player with tilt
+                    ctx.translate(game.player.x, waveY - surfboardHeight/2);
+                    
+                    if (onSlope) {
+                        // On big wave slope
+                        ctx.rotate(slopeAngle + game.player.balance * 0.2);
+                    } else {
+                        // Normal balance tilt
+                        ctx.rotate(game.player.balance * 0.3);
+                    }
+                    
+                    // Draw surfboard
+                    ctx.drawImage(
+                        createSurfboard(surfboardWidth, surfboardHeight), 
+                        -surfboardWidth/2, 
+                        -surfboardHeight/2
+                    );
+                    
+                    // Draw surfer
+                    ctx.drawImage(
+                        createSurfer(surferWidth, surferHeight, 'standing'), 
+                        -surferWidth/2, 
+                        -surfboardHeight/2 - surferHeight
+                    );
+                    
+                    // Draw surfing trail
+                    if (game.frameCount % 3 === 0) {
+                        createWaterParticle(
+                            game.player.x, 
+                            waveY, 
+                            -2 + game.player.balance * 2, 
+                            0
+                        );
+                    }
+                }
+            } else if (game.player.animation.catchingWave) {
+                // Catching wave animation
+                const catchProgress = game.player.animation.catchProgress;
+                
+                // Determine position (moving toward wave)
+                let bigWaveX = canvas.width + 100;
+                if (game.visuals.bigWave.active) {
+                    bigWaveX = game.visuals.bigWave.x;
+                }
+                
+                const moveX = game.player.x + (bigWaveX - game.player.x) * Math.min(0.3, catchProgress * 0.5);
+                
+                // Draw surfboard tilting up to catch wave
+                ctx.save();
+                ctx.translate(moveX, waterHeight - 10);
+                ctx.rotate(-Math.PI * 0.1 * catchProgress);
+                ctx.drawImage(
+                    createSurfboard(surfboardWidth, surfboardHeight), 
+                    -surfboardWidth/2, 
+                    -surfboardHeight/2
+                );
+                ctx.restore();
+                
+                // Draw surfer transitioning from paddling to standing
+                if (catchProgress < 0.5) {
+                    // Still paddling
+                    ctx.drawImage(
+                        createSurfer(surferWidth, surferHeight, 'paddling'), 
+                        moveX - surferWidth/2, 
+                        waterHeight - 25 - surferHeight/2
+                    );
+                } else {
+                    // Transitioning to standing
+                    ctx.save();
+                    ctx.translate(moveX, waterHeight - 25);
+                    const standingProgress = (catchProgress - 0.5) * 2; // 0 to 1
+                    ctx.rotate(-Math.PI * 0.2 * standingProgress);
+                    ctx.drawImage(
+                        createSurfer(surferWidth, surferHeight, 'standing'), 
+                        -surferWidth/2, 
+                        -surferHeight
+                    );
+                    ctx.restore();
+                }
+                
+                // Draw splash effects for wave catching
+                if (game.frameCount % 2 === 0) {
+                    for (let i = 0; i < 2; i++) {
+                        createWaterParticle(
+                            moveX + (Math.random() * 30 - 15), 
+                            waterHeight, 
+                            Math.random() * 2 - 1, 
+                            -Math.random() * 3
+                        );
+                    }
+                }
+            } else {
+                // Draw paddling player
+                // Draw surfboard
+                ctx.drawImage(
+                    createSurfboard(surfboardWidth, surfboardHeight), 
+                    game.player.x - surfboardWidth/2, 
+                    waterHeight - surfboardHeight
+                );
+                
+                // Draw surfer
+                ctx.drawImage(
+                    createSurfer(surferWidth, surferHeight, 'paddling'), 
+                    game.player.x - surferWidth/2, 
+                    waterHeight - 25 - surferHeight/2
+                );
+                
+                // Draw paddle splash when paddling
+                if (game.keysPressed[' ']) {
+                    const splashX = game.player.x - 30;
+                    const splashY = waterHeight + Math.sin(game.frameCount * 0.5) * 3;
+                    
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.beginPath();
+                    ctx.arc(splashX, splashY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Add small splash particles
+                    if (game.frameCount % 5 === 0) {
+                        for (let i = 0; i < 3; i++) {
+                            createWaterParticle(
+                                splashX + (Math.random() * 10 - 5), 
+                                splashY, 
+                                Math.random() * 2 - 1, 
+                                -Math.random() * 2
+                            );
+                        }
+                    }
+                }
+            }
+            
+            ctx.restore();
+            
+            // Draw help text
+            let helpText = '';
+            
+            if (!game.player.onWave && !game.player.animation.catchingWave) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                
+                if (game.player.paddlePower < 50) {
+                    helpText = 'Press SPACE to paddle and build power!';
+                } else if (game.visuals.bigWave.active && 
+                          Math.abs(game.visuals.bigWave.x - game.player.x) < 150) {
+                    helpText = 'BIG WAVE COMING! Press UP ARROW to catch it!';
+                    
+                    // Highlight with pulsing effect
+                    const alpha = 0.5 + Math.sin(game.frameCount * 0.2) * 0.3;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                } else {
+                    helpText = 'Press UP ARROW to catch a wave!';
+                }
+                
+                // Draw text with shadow for better visibility
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                ctx.fillText(helpText, canvas.width / 2, 150);
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+            }
+        }
+        
+        // Helper function to draw a cloud
+        function drawCloud(x, y, width, height) {
+            ctx.beginPath();
+            ctx.arc(x, y, height, 0, Math.PI * 2);
+            ctx.arc(x + width * 0.3, y - height * 0.2, height * 0.8, 0, Math.PI * 2);
+            ctx.arc(x + width * 0.6, y, height * 0.9, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Show welcome message
+        showMessage("Welcome to Surf Simulator! Press SPACE to paddle.", 3000);
+        
+        // Initialize and start game
+        generateWave();
+        createBigWave(); // Create initial big wave
+        gameLoop();
+    </script>
+</body>
+</html>
