@@ -1,987 +1,134 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Enhanced Surf Simulator</title>
+    <title>Surf Simulator</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             background: linear-gradient(135deg, #1E90FF, #87CEEB);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: sans-serif;
             color: white;
             min-height: 100vh;
             overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
         
-        .container {
-            max-width: 900px;
+        .game-container {
+            max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .title {
-            font-size: 42px;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
-            margin: 0;
-            font-weight: bold;
-            letter-spacing: 2px;
+            position: relative;
         }
         
         canvas {
             display: block;
             margin: 0 auto;
             border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background: #87CEEB;
         }
         
-        .status-panel {
-            background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .meter {
-            height: 15px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px 0;
-            position: relative;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
-        }
-        
-        .meter-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-            border-radius: 10px;
-            background-size: 30px 30px;
-            background-image: linear-gradient(
-                45deg, 
-                rgba(255, 255, 255, 0.15) 25%, 
-                transparent 25%, 
-                transparent 50%, 
-                rgba(255, 255, 255, 0.15) 50%, 
-                rgba(255, 255, 255, 0.15) 75%, 
-                transparent 75%, 
-                transparent
-            );
-            animation: meter-stripes 2s linear infinite;
-        }
-        
-        @keyframes meter-stripes {
-            from { background-position: 0 0; }
-            to { background-position: 30px 0; }
-        }
-        
-        .paddle-meter .meter-fill {
-            background-color: #FF9800;
-        }
-        
-        .progress-meter .meter-fill {
-            background-color: #4CAF50;
-        }
-        
-        .combo-meter .meter-fill {
-            background-color: #9C27B0;
-        }
-        
-        .trick-meter .meter-fill {
-            background-color: #2196F3;
-        }
-        
-        .balance-indicator {
-            width: 10px;
-            height: 15px;
-            background: white;
-            border-radius: 5px;
-            position: absolute;
-            top: 0;
-            transform: translateX(-50%);
-            transition: left 0.2s ease;
-            box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
-        }
-        
-        .controls-info {
-            background: rgba(0,0,0,0.3);
-            border-radius: 15px;
-            padding: 20px;
+        .controls {
+            text-align: center;
             margin-top: 15px;
-            text-align: center;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            margin-right: 10px;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        
-        .message {
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 8px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 10;
-            max-width: 400px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .powerup-indicator {
-            position: absolute;
-            top: 180px;
-            right: 20px;
-            background: rgba(0,0,0,0.5);
             padding: 10px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
         }
         
-        .powerup-icon {
-            width: 40px;
-            height: 40px;
-            margin-bottom: 5px;
-            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
-        }
-        
-        .timer {
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
-        .trick-notification {
-            position: absolute;
-            top: 30%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
-            opacity: 0;
-            transition: opacity 0.3s ease, transform 0.5s ease;
-        }
-        
-        .combo-counter {
-            position: absolute;
-            top: 120px;
-            right: 20px;
-            background: rgba(156, 39, 176, 0.7);
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            padding: 10px 15px;
-            border-radius: 50%;
-            opacity: 0;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(156, 39, 176, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease forwards;
-        }
-        
-        @keyframes waveGlow {
-            0% { filter: drop-shadow(0 0 8px rgba(135, 206, 250, 0.5)); }
-            50% { filter: drop-shadow(0 0 20px rgba(135, 206, 250, 0.8)); }
-            100% { filter: drop-shadow(0 0 8px rgba(135, 206, 250, 0.5)); }
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-            100% { transform: translateY(0px); }
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .pause-menu {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 30px;
-            border-radius: 15px;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            z-index: 100;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            width: 300px;
-        }
-        
-        .pause-menu h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: white;
-            text-shadow: 0 0 10px rgba(30, 144, 255, 0.8);
-        }
-        
-        .menu-button {
-            background: linear-gradient(to bottom, #4CAF50, #388E3C);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            margin: 8px 0;
-            border-radius: 30px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 200px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
-        
-        .menu-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.4);
-            background: linear-gradient(to bottom, #66BB6A, #43A047);
-        }
-        
-        .menu-button:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4);
-        }
-        
-        .menu-button.resume {
-            background: linear-gradient(to bottom, #2196F3, #1976D2);
-        }
-        
-        .menu-button.resume:hover {
-            background: linear-gradient(to bottom, #42A5F5, #1E88E5);
-        }
-        
-        .menu-button.settings {
-            background: linear-gradient(to bottom, #FF9800, #F57C00);
-        }
-        
-        .menu-button.settings:hover {
-            background: linear-gradient(to bottom, #FFA726, #FB8C00);
-        }
-        
-        .tutorial-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 90;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
-        }
-        
-        .tutorial-content {
-            background: rgba(30, 144, 255, 0.3);
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 500px;
+        h1 {
             text-align: center;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-        }
-        
-        .tutorial-step {
-            display: none;
-        }
-        
-        .tutorial-step.active {
-            display: block;
-        }
-        
-        .tutorial-navigation {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        
-        .tutorial-btn {
-            background: rgba(255, 255, 255, 0.3);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .tutorial-btn:hover {
-            background: rgba(255, 255, 255, 0.5);
-        }
-        
-        .tutorial-key {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin: 0 5px;
-            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header fade-in">
-            <h1 class="title">Enhanced Surf Simulator</h1>
-        </div>
-        
-        <div class="status-panel fade-in">
-            <div>
-                <span class="badge" style="background: #3F51B5;">Level: <span id="level-display">1</span></span>
-                <span class="badge" style="background: #4CAF50;">Score: <span id="score-display">0</span></span>
-                <span class="badge" style="background: #9C27B0;">Combo: <span id="combo-display">x1</span></span>
-            </div>
-            <div>
-                <span class="badge" style="background: #FF5722;">Wipeouts: <span id="wipeout-display">0</span></span>
-                <span class="badge" style="background: #00BCD4;">Tricks: <span id="tricks-display">0</span></span>
-                <span class="badge" style="background: #FFC107;">Shells: <span id="shells-display">0</span></span>
-            </div>
-        </div>
-        
-        <div class="fade-in">
-            <div>
-                <div style="display: flex; justify-content: space-between;">
-                    <small>Paddle Power</small>
-                    <small><span id="paddle-power-text">0</span>%</small>
-                </div>
-                <div class="meter paddle-meter">
-                    <div id="paddle-power-bar" class="meter-fill" style="width: 0%;"></div>
-                </div>
-            </div>
-            
-            <div>
-                <div style="display: flex; justify-content: space-between;">
-                    <small>Balance</small>
-                    <small id="balance-text">Centered</small>
-                </div>
-                <div class="meter">
-                    <div id="balance-indicator" class="balance-indicator" style="left: 50%;"></div>
-                </div>
-            </div>
-            
-            <div>
-                <div style="display: flex; justify-content: space-between;">
-                    <small>Level Progress</small>
-                    <small><span id="progress-text">0</span>%</small>
-                </div>
-                <div class="meter progress-meter">
-                    <div id="level-progress-bar" class="meter-fill" style="width: 0%;"></div>
-                </div>
-            </div>
-            
-            <div>
-                <div style="display: flex; justify-content: space-between;">
-                    <small>Trick Power</small>
-                    <small><span id="trick-power-text">0</span>%</small>
-                </div>
-                <div class="meter trick-meter">
-                    <div id="trick-power-bar" class="meter-fill" style="width: 0%;"></div>
-                </div>
-            </div>
-        </div>
-        
-        <canvas id="game-canvas" width="800" height="480" class="fade-in"></canvas>
-        
-        <div id="message-box" class="message"></div>
-        <div id="trick-notification" class="trick-notification"></div>
-        <div id="combo-counter" class="combo-counter">x1</div>
-        <div id="powerup-indicator" class="powerup-indicator">
-            <div id="powerup-icon" class="powerup-icon"></div>
-            <div id="powerup-timer" class="timer">0s</div>
-        </div>
-        
-        <div class="controls-info fade-in">
-            <strong>Controls:</strong> SPACE to paddle/jump, UP ARROW to catch wave, LEFT/RIGHT ARROWS to balance<br>
-            F to perform basic trick, G for advanced trick (when trick meter is full), P to pause game
-        </div>
-        
-        <div id="pause-menu" class="pause-menu">
-            <h2>Game Paused</h2>
-            <button id="resume-btn" class="menu-button resume">Resume Game</button>
-            <button id="restart-btn" class="menu-button">Restart Game</button>
-            <button id="tutorial-btn" class="menu-button settings">Tutorial</button>
-        </div>
-        
-        <div id="tutorial-overlay" class="tutorial-overlay">
-            <div class="tutorial-content">
-                <div id="tutorial-step-1" class="tutorial-step active">
-                    <h2>Welcome to Surf Simulator!</h2>
-                    <p>Learn to ride the waves like a pro in this enhanced surfing experience!</p>
-                    <div class="tutorial-navigation">
-                        <button class="tutorial-btn" onclick="closeTutorial()">Skip</button>
-                        <button class="tutorial-btn" onclick="nextTutorialStep()">Next →</button>
-                    </div>
-                </div>
-                
-                <div id="tutorial-step-2" class="tutorial-step">
-                    <h2>Basic Controls</h2>
-                    <p>Press <span class="tutorial-key">SPACE</span> to paddle and build power.</p>
-                    <p>When your paddle power is over 50%, press <span class="tutorial-key">UP</span> to catch a wave!</p>
-                    <div class="tutorial-navigation">
-                        <button class="tutorial-btn" onclick="prevTutorialStep()">← Back</button>
-                        <button class="tutorial-btn" onclick="nextTutorialStep()">Next →</button>
-                    </div>
-                </div>
-                
-                <div id="tutorial-step-3" class="tutorial-step">
-                    <h2>Riding the Wave</h2>
-                    <p>Use <span class="tutorial-key">LEFT</span> and <span class="tutorial-key">RIGHT</span> arrows to maintain your balance.</p>
-                    <p>Press <span class="tutorial-key">SPACE</span> while riding to jump!</p>
-                    <div class="tutorial-navigation">
-                        <button class="tutorial-btn" onclick="prevTutorialStep()">← Back</button>
-                        <button class="tutorial-btn" onclick="nextTutorialStep()">Next →</button>
-                    </div>
-                </div>
-                
-                <div id="tutorial-step-4" class="tutorial-step">
-                    <h2>Tricks & Combos</h2>
-                    <p>While in the air, press <span class="tutorial-key">F</span> to perform a basic trick.</p>
-                    <p>When your trick meter is full, press <span class="tutorial-key">G</span> for an advanced trick!</p>
-                    <p>Chain tricks to build your combo multiplier!</p>
-                    <div class="tutorial-navigation">
-                        <button class="tutorial-btn" onclick="prevTutorialStep()">← Back</button>
-                        <button class="tutorial-btn" onclick="nextTutorialStep()">Next →</button>
-                    </div>
-                </div>
-                
-                <div id="tutorial-step-5" class="tutorial-step">
-                    <h2>Collectibles & Obstacles</h2>
-                    <p>Collect shells for extra points!</p>
-                    <p>Grab power-ups for special abilities!</p>
-                    <p>Avoid obstacles like rocks and other surfers!</p>
-                    <div class="tutorial-navigation">
-                        <button class="tutorial-btn" onclick="prevTutorialStep()">← Back</button>
-                        <button class="tutorial-btn" onclick="closeTutorial()">Start Surfing!</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <h1>Surf Simulator</h1>
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+    </div>
+    <div class="controls">
+        <strong>Controls:</strong> SPACE to paddle/jump, LEFT/RIGHT to balance, UP to catch wave
     </div>
 
     <script>
-        // Get elements
-        const canvas = document.getElementById('game-canvas');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
-        const levelDisplay = document.getElementById('level-display');
-        const scoreDisplay = document.getElementById('score-display');
-        const wipeoutDisplay = document.getElementById('wipeout-display');
-        const comboDisplay = document.getElementById('combo-display');
-        const tricksDisplay = document.getElementById('tricks-display');
-        const shellsDisplay = document.getElementById('shells-display');
-        
-        const paddlePowerBar = document.getElementById('paddle-power-bar');
-        const paddlePowerText = document.getElementById('paddle-power-text');
-        const balanceIndicator = document.getElementById('balance-indicator');
-        const balanceText = document.getElementById('balance-text');
-        const levelProgressBar = document.getElementById('level-progress-bar');
-        const progressText = document.getElementById('progress-text');
-        const trickPowerBar = document.getElementById('trick-power-bar');
-        const trickPowerText = document.getElementById('trick-power-text');
-        
-        const messageBox = document.getElementById('message-box');
-        const trickNotification = document.getElementById('trick-notification');
-        const comboCounter = document.getElementById('combo-counter');
-        const powerupIndicator = document.getElementById('powerup-indicator');
-        const powerupIcon = document.getElementById('powerup-icon');
-        const powerupTimer = document.getElementById('powerup-timer');
-        
-        const pauseMenu = document.getElementById('pause-menu');
-        const resumeBtn = document.getElementById('resume-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const tutorialBtn = document.getElementById('tutorial-btn');
-        const tutorialOverlay = document.getElementById('tutorial-overlay');
-        
-        // Container for drawn graphics
-        const images = {};
-        
-        // Initialize game directly without waiting for image loading
-        initGame();
-        
-        // Audio elements (configured as dummy objects to prevent errors)
-        const audio = {
-            wave: { play: function() { console.log("Playing wave sound"); } },
-            splash: { play: function() { console.log("Playing splash sound"); } },
-            collect: { play: function() { console.log("Playing collect sound"); } },
-            trick: { play: function() { console.log("Playing trick sound"); } },
-            wipeout: { play: function() { console.log("Playing wipeout sound"); } },
-            levelUp: { play: function() { console.log("Playing levelUp sound"); } },
-            powerup: { play: function() { console.log("Playing powerup sound"); } },
-            music: { play: function() { console.log("Playing music"); } }
-        };
         
         // Game state
         const game = {
             active: true,
             paused: false,
             frameCount: 0,
-            timers: {},
+            score: 0,
+            level: 1,
+            wipeouts: 0,
             player: {
-                x: 200,
+                x: canvas.width / 4,
                 y: 0,
+                width: 50,
+                height: 40,
                 paddlePower: 0,
-                trickPower: 0,
                 onWave: false,
                 jumping: false,
-                performingTrick: false,
-                currentTrick: null,
-                trickRotation: 0,
                 jumpVelocity: 0,
-                balance: 0,
-                score: 0,
-                wipeouts: 0,
-                tricks: 0,
-                shells: 0,
-                combo: 1,
-                comboTimer: 0,
-                surfboardType: 'standard',
-                animation: {
-                    paddleFrame: 0,
-                    jumpFrame: 0,
-                    catchingWave: false,
-                    catchProgress: 0
-                },
-                powerups: {
-                    active: false,
-                    type: null,
-                    duration: 0,
-                    timeLeft: 0
-                }
-            },
-            level: {
-                current: 1,
-                distance: 0,
-                maxDistance: 1000,
-                progress: 0,
-                environment: 'day',
-                weather: 'clear'
+                balance: 0
             },
             wave: [],
-            waveHighlights: [],
-            waterParticles: [],
-            foamParticles: [],
-            collectibles: [],
-            obstacles: [],
-            environment: {
-                clouds: [],
-                birds: [],
-                fish: [],
-                islands: []
-            },
+            particles: [],
             keysPressed: {},
-            difficulty: {
-                waveSpeed: 2,
-                turbulence: 0.3,
-                balanceDifficulty: 1,
-                obstacleFrequency: 0.002,
-                collectibleFrequency: 0.005
-            },
-            visuals: {
-                bigWave: {
-                    active: false,
-                    x: -100,
-                    height: 0,
-                    speed: 3,
-                    width: 300
-                },
-                trickText: {
-                    active: false,
-                    text: "",
-                    duration: 0,
-                    opacity: 0
-                }
-            },
-            tutorial: {
+            bigWave: {
                 active: false,
-                step: 1,
-                totalSteps: 5
+                x: -100,
+                height: 60,
+                width: 300,
+                speed: 2
             }
         };
         
-        // Trick definitions
-        const tricks = {
-            basic: [
-                { name: "360 Spin", points: 50, execution: function() { game.player.trickRotation = Math.PI * 2; } },
-                { name: "Ollie", points: 30, execution: function() { game.player.jumpVelocity += 3; } },
-                { name: "Grab", points: 40, execution: function() { /* Visual effect only */ } }
-            ],
-            advanced: [
-                { name: "720 Spin", points: 100, execution: function() { game.player.trickRotation = Math.PI * 4; } },
-                { name: "Backflip", points: 120, execution: function() { game.player.trickRotation = -Math.PI * 2; } },
-                { name: "Monster Grab", points: 150, execution: function() { /* Visual effect only */ } }
-            ]
-        };
-        
-        // Surfboard definitions
-        const surfboardTypes = {
-            standard: { width: 60, height: 15, color: '#F5F5F5', speedMod: 1, balanceMod: 1, trickMod: 1 },
-            shortboard: { width: 50, height: 12, color: '#FFD700', speedMod: 1.2, balanceMod: 0.8, trickMod: 1.3 },
-            longboard: { width: 70, height: 16, color: '#8B4513', speedMod: 0.8, balanceMod: 1.3, trickMod: 0.7 },
-            performance: { width: 55, height: 14, color: '#FF4500', speedMod: 1.1, balanceMod: 1.1, trickMod: 1.2 }
-        };
-        
-        // Powerup types
-        const powerupTypes = {
-            speed: { 
-                name: "Speed Boost", 
-                duration: 10, 
-                effect: function() { game.difficulty.waveSpeed *= 1.5; },
-                endEffect: function() { game.difficulty.waveSpeed /= 1.5; }
-            },
-            balance: { 
-                name: "Perfect Balance", 
-                duration: 8, 
-                effect: function() { game.difficulty.balanceDifficulty *= 0.5; },
-                endEffect: function() { game.difficulty.balanceDifficulty /= 0.5; }
-            },
-            trick: { 
-                name: "Trick Master", 
-                duration: 12, 
-                effect: function() { game.player.trickPower = 100; },
-                endEffect: function() { /* No end effect needed */ }
-            }
-        };
-        
-        // Create surfboard with more details
-        function createSurfboard(width, height, type = 'standard') {
-            const surfboard = document.createElement('canvas');
-            const boardType = surfboardTypes[type] || surfboardTypes.standard;
-            surfboard.width = boardType.width;
-            surfboard.height = boardType.height;
-            const sctx = surfboard.getContext('2d');
-            
-            // Board shape
-            const gradient = sctx.createLinearGradient(0, 0, width, 0);
-            gradient.addColorStop(0, boardType.color);
-            gradient.addColorStop(0.5, '#FFFFFF');
-            gradient.addColorStop(1, boardType.color);
-            
-            sctx.fillStyle = gradient;
-            sctx.beginPath();
-            sctx.moveTo(width * 0.1, height * 0.5);
-            sctx.bezierCurveTo(
-                width * 0.1, height * 0.3,
-                width * 0.3, 0,
-                width * 0.5, 0
-            );
-            sctx.bezierCurveTo(
-                width * 0.7, 0,
-                width * 0.9, height * 0.3,
-                width * 0.9, height * 0.5
-            );
-            sctx.bezierCurveTo(
-                width * 0.9, height * 0.7,
-                width * 0.7, height,
-                width * 0.5, height
-            );
-            sctx.bezierCurveTo(
-                width * 0.3, height,
-                width * 0.1, height * 0.7,
-                width * 0.1, height * 0.5
-            );
-            sctx.fill();
-            
-            // Board stripe
-            sctx.strokeStyle = '#4682B4';
-            sctx.lineWidth = 2;
-            sctx.beginPath();
-            sctx.moveTo(width * 0.3, height * 0.5);
-            sctx.lineTo(width * 0.7, height * 0.5);
-            sctx.stroke();
-            
-            // Add custom details based on board type
-            if (type === 'shortboard') {
-                // Add racing stripes
-                sctx.strokeStyle = '#FF4500';
-                sctx.beginPath();
-                sctx.moveTo(width * 0.2, height * 0.3);
-                sctx.lineTo(width * 0.8, height * 0.3);
-                sctx.stroke();
-                
-                sctx.beginPath();
-                sctx.moveTo(width * 0.2, height * 0.7);
-                sctx.lineTo(width * 0.8, height * 0.7);
-                sctx.stroke();
-            } else if (type === 'longboard') {
-                // Add wood texture
-                sctx.strokeStyle = '#8B4513';
-                for (let i = 0; i < width; i += width / 8) {
-                    sctx.beginPath();
-                    sctx.moveTo(i, 0);
-                    sctx.lineTo(i, height);
-                    sctx.stroke();
-                }
-            } else if (type === 'performance') {
-                // Add tech pattern
-                sctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                sctx.beginPath();
-                sctx.arc(width * 0.5, height * 0.5, height * 0.3, 0, Math.PI * 2);
-                sctx.fill();
-                
-                sctx.strokeStyle = '#00BFFF';
-                sctx.beginPath();
-                sctx.arc(width * 0.5, height * 0.5, height * 0.3, 0, Math.PI * 2);
-                sctx.stroke();
-            }
-            
-            return surfboard;
-        }
-        
-        // Create surfer with different poses and optional rotation for tricks
-        function createSurfer(width, height, pose, rotation = 0, trickType = null) {
-            const surfer = document.createElement('canvas');
-            surfer.width = width * 1.5; // Add extra space for rotation
-            surfer.height = height * 1.5;
-            const sctx = surfer.getContext('2d');
-            
-            // Apply rotation for tricks
-            sctx.save();
-            sctx.translate(surfer.width / 2, surfer.height / 2);
-            sctx.rotate(rotation);
-            
-            // Body color - customize based on level to unlock new suits
-            const bodyColors = ['#FF6347', '#3F51B5', '#4CAF50', '#FFC107', '#9C27B0'];
-            const colorIndex = Math.min(game.level.current - 1, bodyColors.length - 1);
-            sctx.fillStyle = bodyColors[colorIndex];
-            
-            // Draw different poses
-            if (pose === 'standing') {
-                // Body
-                sctx.fillRect(-width * 0.1, -height * 0.2, width * 0.2, height * 0.4);
-                
-                // Head
-                sctx.beginPath();
-                sctx.arc(0, -height * 0.3, width * 0.1, 0, Math.PI * 2);
-                sctx.fill();
-                
-                // Arms
-                sctx.fillRect(-width * 0.25, -height * 0.15, width * 0.15, height * 0.1);
-                sctx.fillRect(width * 0.1, -height * 0.15, width * 0.15, height * 0.1);
-                
-                // Legs
-                sctx.fillRect(-width * 0.1, height * 0.2, width * 0.08, height * 0.3);
-                sctx.fillRect(width * 0.02, height * 0.2, width * 0.08, height * 0.3);
-                
-                // Add wetsuit details
-                sctx.strokeStyle = '#FFFFFF';
-                sctx.lineWidth = 2;
-                sctx.beginPath();
-                sctx.moveTo(-width * 0.1, -height * 0.1);
-                sctx.lineTo(width * 0.1, -height * 0.1);
-                sctx.stroke();
-            } else if (pose === 'paddling') {
-                // Body (lying down)
-                sctx.fillRect(-width * 0.2, -height * 0.1, width * 0.4, height * 0.2);
-                
-                // Head
-                sctx.beginPath();
-                sctx.arc(width * 0.2, 0, width * 0.1, 0, Math.PI * 2);
-                sctx.fill();
-                
-                // Arms (one up, one down for paddling animation)
-                if (game.frameCount % 20 < 10) {
-                    sctx.fillRect(-width * 0.25, -height * 0.2, width * 0.15, height * 0.1);
-                    sctx.fillRect(-width * 0.25, height * 0.1, width * 0.15, height * 0.1);
-                } else {
-                    sctx.fillRect(-width * 0.25, -height * 0.15, width * 0.15, height * 0.1);
-                    sctx.fillRect(-width * 0.25, height * 0.05, width * 0.15, height * 0.1);
-                }
-                
-                // Add wetsuit details
-                sctx.strokeStyle = '#FFFFFF';
-                sctx.lineWidth = 2;
-                sctx.beginPath();
-                sctx.moveTo(-width * 0.2, 0);
-                sctx.lineTo(width * 0.2, 0);
-                sctx.stroke();
-            } else if (pose === 'jumping') {
-                // Crouched body
-                sctx.fillRect(-width * 0.1, -height * 0.1, width * 0.2, height * 0.3);
-                
-                // Head
-                sctx.beginPath();
-                sctx.arc(0, -height * 0.2, width * 0.1, 0, Math.PI * 2);
-                sctx.fill();
-                
-                // Arms out
-                sctx.fillRect(-width * 0.25, -height * 0.05, width * 0.15, height * 0.1);
-                sctx.fillRect(width * 0.1, -height * 0.05, width * 0.15, height * 0.1);
-                
-                // Bent legs
-                sctx.fillRect(-width * 0.1, height * 0.2, width * 0.08, height * 0.2);
-                sctx.fillRect(width * 0.02, height * 0.2, width * 0.08, height * 0.2);
-                
-                // Add wetsuit details
-                sctx.strokeStyle = '#FFFFFF';
-                sctx.lineWidth = 2;
-                sctx.beginPath();
-                sctx.moveTo(-width * 0.1, 0);
-                sctx.lineTo(width * 0.1, 0);
-                sctx.stroke();
-            } else if (pose === 'trick') {
-                // Special pose for tricks
-                if (trickType === 'grab') {
-                    // Grab pose - body arched, grabbing board
-                    sctx.fillRect(-width * 0.1, -height * 0.1, width * 0.2, height * 0.3);
-                    
-                    // Head
-                    sctx.beginPath();
-                    sctx.arc(0, -height * 0.2, width * 0.1, 0, Math.PI * 2);
-                    sctx.fill();
-                    
-                    // One arm reaching down
-                    sctx.fillRect(-width * 0.1, -height * 0.05, width * 0.1, height * 0.3);
-                    
-                    // Other arm out
-                    sctx.fillRect(width * 0.1, -height * 0.05, width * 0.15, height * 0.1);
-                    
-                    // Bent legs
-                    sctx.fillRect(-width * 0.05, height * 0.15, width * 0.1, height * 0.15);
-                } else if (trickType === 'spin') {
-                    // Spin pose - body compact
-                    sctx.fillRect(-width * 0.1, -height * 0.1, width * 0.2, height * 0.2);
-                    
-                    // Head
-                    sctx.beginPath();
-                    sctx.arc(0, -height * 0.2, width * 0.1, 0, Math.PI * 2);
-                    sctx.fill();
-                    
-                    // Arms out wide
-                    sctx.fillRect(-width * 0.3, -height * 0.05, width * 0.2, height * 0.05);
-                    sctx.fillRect(width * 0.1, -height * 0.05, width * 0.2, height * 0.05);
-                    
-                    // Legs together
-                    sctx.fillRect(-width * 0.05, height * 0.1, width * 0.1, height * 0.2);
-                } else if (trickType === 'flip') {
-                    // Flip pose - body arched backwards
-                    sctx.fillRect(-width * 0.1, -height * 0.05, width * 0.2, height * 0.2);
-                    
-                    // Head
-                    sctx.beginPath();
-                    sctx.arc(0, -height * 0.15, width * 0.1, 0, Math.PI * 2);
-                    sctx.fill();
-                    
-                    // Arms back
-                    sctx.fillRect(-width * 0.25, -height * 0.05, width * 0.15, height * 0.05);
-                    sctx.fillRect(width * 0.1, -height * 0.05, width * 0.15, height * 0.05);
-                    
-                    // Legs up
-                    sctx.fillRect(-width * 0.1, height * 0.15, width * 0.08, height * 0.2);
-                    sctx.fillRect(width * 0.02, height * 0.15, width * 0.08, height * 0.2);
-                } else {
-                    // Default trick pose
-                    sctx.fillRect(-width * 0.1, -height * 0.1, width * 0.2, height * 0.3);
-                    
-                    // Head
-                    sctx.beginPath();
-                    sctx.arc(0, -height * 0.2, width * 0.1, 0, Math.PI * 2);
-                    sctx.fill();
-                    
-                    // Arms out
-                    sctx.fillRect(-width * 0.25, -height * 0.05, width * 0.15, height * 0.1);
-                    sctx.fillRect(width * 0.1, -height * 0.05, width * 0.15, height * 0.1);
-                    
-                    // Bent legs
-                    sctx.fillRect(-width * 0.1, height * 0.2, width * 0.08, height * 0.2);
-                    sctx.fillRect(width * 0.02, height * 0.2, width * 0.08, height * 0.2);
-                }
-                
-                // Add wetsuit details
-                sctx.strokeStyle = '#FFFFFF';
-                sctx.lineWidth = 2;
-                sctx.beginPath();
-                sctx.moveTo(-width * 0.1, 0);
-                sctx.lineTo(width * 0.1, 0);
-                sctx.stroke();
-            }
-            
-            sctx.restore();
-            
-            return surfer;
-        }
-        
-        // Generate wave
+        // Generate wave points
         function generateWave() {
             game.wave = [];
-            for (let x = 0; x < 200; x += 0.5) {
+            for (let x = 0; x < canvas.width; x += 5) {
                 game.wave.push({
                     x: x,
-                    y: 5 * Math.sin(x * 0.1) + 2 * Math.sin(x * 0.2) + game.difficulty.turbulence * Math.random(),
-                    glowing: false
+                    y: 5 * Math.sin(x * 0.01) + 2 * Math.sin(x * 0.02) + Math.random() * 2
                 });
             }
         }
         
-        // Create a big surfable wave
+        // Create big surfable wave
         function createBigWave() {
-            game.visuals.bigWave.active = true;
-            game.visuals.bigWave.x = -100;
-            game.visuals.bigWave.height = 60 + game.level.current * 10;
-            game.visuals.bigWave.width = 300;
+            game.bigWave.active = true;
+            game.bigWave.x = -100;
+            game.bigWave.height = 60 + game.level * 5;
+            game.bigWave.width = 300;
             
-            // Add message
-            showMessage("Big wave approaching! Get ready to catch it!");
-            
-            // Play wave sound
-            playSound('wave');
+            // Display message
+            displayMessage("Big wave coming! Get ready!");
         }
         
-        // Water particle effect
-        function createWaterParticle(x, y, vx, vy) {
-            game.waterParticles.push({
+        // Display a message
+        function displayMessage(text, duration = 2000) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(canvas.width/2 - 150, canvas.height/2 - 25, 300, 50);
+            ctx.fillStyle = 'white';
+            ctx.font = '18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width/2, canvas.height/2);
+            ctx.restore();
+            
+            // In a real game, we'd set a timer to clear this message
+        }
+        
+        // Create a water splash particle
+        function createParticle(x, y, vx, vy) {
+            game.particles.push({
                 x: x,
                 y: y,
                 vx: vx,
@@ -992,1121 +139,165 @@
             });
         }
         
-        // Foam particle effect
-        function createFoamParticle(x, y) {
-            game.foamParticles.push({
-                x: x,
-                y: y,
-                size: Math.random() * 4 + 2,
-                life: 40 + Math.random() * 30,
-                alpha: 0.7 + Math.random() * 0.3,
-                vx: Math.random() * 2 - 1,
-                vy: Math.random() * 1 - 0.5
-            });
-        }
-        
-        // Create collectible (shell, powerup)
-        function createCollectible(type) {
-            const waterHeight = canvas.height * 0.7;
-            const collectibleTypes = ['shell', 'powerup'];
-            const collectibleType = type || collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
-            
-            let collectible = {
-                x: canvas.width + 50,
-                y: 0,
-                type: collectibleType,
-                collected: false,
-                width: 30,
-                height: 30
-            };
-            
-            // Set specific properties based on type
-            if (collectibleType === 'shell') {
-                collectible.points = 25 * game.level.current;
-                collectible.y = waterHeight - 20 - Math.random() * 30;
-            } else if (collectibleType === 'powerup') {
-                const powerupKeys = Object.keys(powerupTypes);
-                collectible.powerupType = powerupKeys[Math.floor(Math.random() * powerupKeys.length)];
-                collectible.y = waterHeight - 50 - Math.random() * 40;
-            }
-            
-            game.collectibles.push(collectible);
-        }
-        
-        // Create obstacle (rock, other surfer)
-        function createObstacle() {
-            const waterHeight = canvas.height * 0.7;
-            const obstacleTypes = ['rock', 'surfer'];
-            const obstacleType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-            
-            let obstacle = {
-                x: canvas.width + 100,
-                y: waterHeight - 20,
-                type: obstacleType,
-                width: 50,
-                height: 40,
-                hit: false
-            };
-            
-            // Set specific properties based on type
-            if (obstacleType === 'rock') {
-                obstacle.y = waterHeight - 15;
-            } else if (obstacleType === 'surfer') {
-                obstacle.y = waterHeight - 30;
-                obstacle.speed = 1 + Math.random() * 2;
-            }
-            
-            game.obstacles.push(obstacle);
-        }
-        
-        // Create environmental elements
-        function createEnvironment() {
-            // Create clouds
-            for (let i = 0; i < 5; i++) {
-                game.environment.clouds.push({
-                    x: Math.random() * canvas.width,
-                    y: 50 + Math.random() * 100,
-                    speed: 0.2 + Math.random() * 0.5,
-                    scale: 0.5 + Math.random() * 1
-                });
-            }
-            
-            // Create distant islands
-            for (let i = 0; i < 2; i++) {
-                game.environment.islands.push({
-                    x: (i * 500) + Math.random() * 300,
-                    y: canvas.height * 0.65 - 20,
-                    scale: 0.6 + Math.random() * 0.4
-                });
-            }
-            
-            // Create birds
-            createBirds();
-            
-            // Create fish
-            createFish();
-        }
-        
-        // Create birds that occasionally appear
-        function createBirds() {
-            if (game.environment.birds.length < 3 && Math.random() < 0.01) {
-                const birdCount = 3 + Math.floor(Math.random() * 4);
-                const formationY = Math.random() * 150 + 50;
-                const direction = Math.random() > 0.5 ? 1 : -1;
-                const startX = direction > 0 ? -50 : canvas.width + 50;
-                
-                for (let i = 0; i < birdCount; i++) {
-                    game.environment.birds.push({
-                        x: startX + (i * 20 * Math.random()),
-                        y: formationY + (i * 10 * Math.random()),
-                        speed: (1 + Math.random() * 1) * direction,
-                        flapSpeed: 0.1 + Math.random() * 0.1,
-                        flapOffset: Math.random() * Math.PI * 2,
-                        scale: 0.5 + Math.random() * 0.5
-                    });
-                }
-            }
-        }
-        
-        // Create fish that occasionally jump
-        function createFish() {
-            if (game.environment.fish.length < 5 && Math.random() < 0.005) {
-                const waterHeight = canvas.height * 0.7;
-                
-                game.environment.fish.push({
-                    x: Math.random() * canvas.width,
-                    y: waterHeight,
-                    jumpHeight: 30 + Math.random() * 40,
-                    jumpProgress: 0,
-                    jumpSpeed: 0.02 + Math.random() * 0.02,
-                    direction: Math.random() > 0.5 ? 1 : -1,
-                    scale: 0.6 + Math.random() * 0.6
-                });
-            }
-        }
-        
-        // Show message
-        function showMessage(text, duration = 2000) {
-            messageBox.textContent = text;
-            messageBox.style.opacity = 1;
-            
-            clearTimeout(game.timers.messageTimer);
-            game.timers.messageTimer = setTimeout(() => {
-                messageBox.style.opacity = 0;
-            }, duration);
-        }
-        
-        // Show trick notification
-        function showTrickNotification(trickName, points) {
-            trickNotification.textContent = `${trickName} +${points}`;
-            trickNotification.style.opacity = 1;
-            trickNotification.style.transform = 'translate(-50%, -80px)';
-            
-            clearTimeout(game.timers.trickTimer);
-            game.timers.trickTimer = setTimeout(() => {
-                trickNotification.style.opacity = 0;
-                trickNotification.style.transform = 'translate(-50%, -50%)';
-            }, 1500);
-        }
-        
-        // Show combo counter
-        function updateComboCounter() {
-            comboCounter.textContent = `x${game.player.combo}`;
-            
-            if (game.player.combo > 1) {
-                comboCounter.style.opacity = 1;
-                comboCounter.style.transform = 'scale(1.2)';
-                
-                setTimeout(() => {
-                    comboCounter.style.transform = 'scale(1)';
-                }, 200);
-                
-                // Reset combo timer
-                game.player.comboTimer = 5 * 60; // 5 seconds at 60fps
-            } else {
-                comboCounter.style.opacity = 0;
-            }
-        }
-        
-        // Show powerup indicator
-        function updatePowerupIndicator() {
-            if (game.player.powerups.active) {
-                const powerup = game.player.powerups;
-                
-                powerupIndicator.style.opacity = 1;
-                powerupIcon.style.backgroundColor = getPowerupColor(powerup.type);
-                powerupTimer.textContent = `${Math.ceil(powerup.timeLeft / 60)}s`;
-            } else {
-                powerupIndicator.style.opacity = 0;
-            }
-        }
-        
-        // Get powerup color
-        function getPowerupColor(type) {
-            const colors = {
-                speed: '#2196F3',
-                balance: '#4CAF50',
-                trick: '#9C27B0'
-            };
-            
-            return colors[type] || '#FFC107';
-        }
-        
-        // Perform trick
-        function performTrick(advanced = false) {
-            if (!game.player.jumping || game.player.performingTrick) return;
-            
-            let trickPool = advanced ? tricks.advanced : tricks.basic;
-            let trick = trickPool[Math.floor(Math.random() * trickPool.length)];
-            
-            // Execute trick
-            game.player.performingTrick = true;
-            game.player.currentTrick = trick;
-            
-            // Apply trick effect
-            trick.execution();
-            
-            // Award points multiplied by combo
-            const points = trick.points * game.player.combo;
-            game.player.score += points;
-            scoreDisplay.textContent = game.player.score;
-            
-            // Increment trick counter
-            game.player.tricks++;
-            tricksDisplay.textContent = game.player.tricks;
-            
-            // Show notification
-            showTrickNotification(trick.name, points);
-            
-            // Play trick sound
-            playSound('trick');
-            
-            // Increase combo
-            game.player.combo++;
-            comboDisplay.textContent = `x${game.player.combo}`;
-            updateComboCounter();
-            
-            // Generate particles for visual effect
-            for (let i = 0; i < 20; i++) {
-                createWaterParticle(
-                    game.player.x + (Math.random() * 60 - 30),
-                    canvas.height * 0.7 - game.player.y - 20,
-                    Math.random() * 6 - 3,
-                    Math.random() * -6
-                );
-            }
-            
-            // Increase trick power
-            if (!advanced) {
-                game.player.trickPower = Math.min(100, game.player.trickPower + 25);
-                trickPowerBar.style.width = `${game.player.trickPower}%`;
-                trickPowerText.textContent = Math.floor(game.player.trickPower);
-            } else {
-                // Reset trick power after advanced trick
-                game.player.trickPower = 0;
-                trickPowerBar.style.width = '0%';
-                trickPowerText.textContent = '0';
-            }
-        }
-        
-        // Apply powerup
-        function applyPowerup(type) {
-            // End any active powerup first
-            if (game.player.powerups.active) {
-                const activePowerup = powerupTypes[game.player.powerups.type];
-                if (activePowerup.endEffect) {
-                    activePowerup.endEffect();
-                }
-            }
-            
-            // Apply new powerup
-            const powerup = powerupTypes[type];
-            if (!powerup) return;
-            
-            game.player.powerups.active = true;
-            game.player.powerups.type = type;
-            game.player.powerups.duration = powerup.duration;
-            game.player.powerups.timeLeft = powerup.duration * 60; // Convert to frames
-            
-            // Apply effect
-            if (powerup.effect) {
-                powerup.effect();
-            }
-            
-            // Show message
-            showMessage(`Powerup activated: ${powerup.name}!`, 2000);
-            
-            // Update indicator
-            updatePowerupIndicator();
-            
-            // Play powerup sound
-            playSound('powerup');
-        }
-        
-        // Check collision between two objects
-        function checkCollision(obj1, obj2) {
-            return (
-                obj1.x < obj2.x + obj2.width &&
-                obj1.x + obj1.width > obj2.x &&
-                obj1.y < obj2.y + obj2.height &&
-                obj1.y + obj1.height > obj2.y
-            );
-        }
-        
-        // Play sound
-        function playSound(soundName) {
-            // Play sound if it exists in our audio object
-            if (audio[soundName]) {
-                try {
-                    audio[soundName].play();
-                } catch (e) {
-                    console.log(`Playing sound: ${soundName}`);
-                }
-            }
-        }
-        
-        // Toggle pause menu
-        function togglePauseMenu() {
-            game.paused = !game.paused;
-            
-            if (game.paused) {
-                pauseMenu.style.display = 'flex';
-            } else {
-                pauseMenu.style.display = 'none';
-            }
-        }
-        
-        // Show tutorial
-        function showTutorial() {
-            game.tutorial.active = true;
-            game.tutorial.step = 1;
-            tutorialOverlay.style.opacity = 1;
-            tutorialOverlay.style.pointerEvents = 'auto';
-            
-            // Show first step
-            document.querySelectorAll('.tutorial-step').forEach(step => {
-                step.classList.remove('active');
-            });
-            document.getElementById(`tutorial-step-1`).classList.add('active');
-        }
-        
-        // Next tutorial step
-        function nextTutorialStep() {
-            if (game.tutorial.step < game.tutorial.totalSteps) {
-                game.tutorial.step++;
-                document.querySelectorAll('.tutorial-step').forEach(step => {
-                    step.classList.remove('active');
-                });
-                document.getElementById(`tutorial-step-${game.tutorial.step}`).classList.add('active');
-            }
-        }
-        
-        // Previous tutorial step
-        function prevTutorialStep() {
-            if (game.tutorial.step > 1) {
-                game.tutorial.step--;
-                document.querySelectorAll('.tutorial-step').forEach(step => {
-                    step.classList.remove('active');
-                });
-                document.getElementById(`tutorial-step-${game.tutorial.step}`).classList.add('active');
-            }
-        }
-        
-        // Close tutorial
-        function closeTutorial() {
-            game.tutorial.active = false;
-            tutorialOverlay.style.opacity = 0;
-            tutorialOverlay.style.pointerEvents = 'none';
-            
-            // Unpause game if it was paused
-            if (game.paused) {
-                togglePauseMenu();
-            }
-        }
-        
-        // Reset game
-        function resetGame() {
-            // Reset player
-            game.player = {
-                x: 200,
-                y: 0,
-                paddlePower: 0,
-                trickPower: 0,
-                onWave: false,
-                jumping: false,
-                performingTrick: false,
-                currentTrick: null,
-                trickRotation: 0,
-                jumpVelocity: 0,
-                balance: 0,
-                score: 0,
-                wipeouts: 0,
-                tricks: 0,
-                shells: 0,
-                combo: 1,
-                comboTimer: 0,
-                surfboardType: 'standard',
-                animation: {
-                    paddleFrame: 0,
-                    jumpFrame: 0,
-                    catchingWave: false,
-                    catchProgress: 0
-                },
-                powerups: {
-                    active: false,
-                    type: null,
-                    duration: 0,
-                    timeLeft: 0
-                }
-            };
-            
-            // Reset level
-            game.level = {
-                current: 1,
-                distance: 0,
-                maxDistance: 1000,
-                progress: 0,
-                environment: 'day',
-                weather: 'clear'
-            };
-            
-            // Reset difficulty
-            game.difficulty = {
-                waveSpeed: 2,
-                turbulence: 0.3,
-                balanceDifficulty: 1,
-                obstacleFrequency: 0.002,
-                collectibleFrequency: 0.005
-            };
-            
-            // Clear arrays
-            game.wave = [];
-            game.waterParticles = [];
-            game.foamParticles = [];
-            game.collectibles = [];
-            game.obstacles = [];
-            
-            // Reset environment
-            game.environment = {
-                clouds: [],
-                birds: [],
-                fish: [],
-                islands: []
-            };
-            
-            // Generate new environment
-            generateWave();
-            createEnvironment();
-            
-            // Reset UI
-            levelDisplay.textContent = 1;
-            scoreDisplay.textContent = 0;
-            wipeoutDisplay.textContent = 0;
-            comboDisplay.textContent = 'x1';
-            tricksDisplay.textContent = 0;
-            shellsDisplay.textContent = 0;
-            
-            paddlePowerBar.style.width = '0%';
-            paddlePowerText.textContent = '0';
-            balanceIndicator.style.left = '50%';
-            balanceText.textContent = 'Centered';
-            levelProgressBar.style.width = '0%';
-            progressText.textContent = '0';
-            trickPowerBar.style.width = '0%';
-            trickPowerText.textContent = '0';
-            
-            comboCounter.style.opacity = 0;
-            powerupIndicator.style.opacity = 0;
-            
-            // Show welcome message
-            showMessage("Welcome to Surf Simulator! Press SPACE to paddle.", 3000);
-            
-            // Create initial big wave
-            createBigWave();
-            
-            // Unpause if paused
-            if (game.paused) {
-                togglePauseMenu();
-            }
-        }
-        
-        // Initialize game
-        function initGame() {
-            // Add event listeners
-            setupEventListeners();
-            
-            // Generate initial game elements
-            generateWave();
-            createEnvironment();
-            createBigWave(); // Create initial big wave
-            
-            // Show welcome message
-            showMessage("Welcome to Enhanced Surf Simulator! Press SPACE to paddle.", 3000);
-            
-            // Show tutorial on first load
-            showTutorial();
-            
-            // Start game loop
-            gameLoop();
-        }
-        
-        // Setup event listeners
-        function setupEventListeners() {
-            // Handle key presses
-            document.addEventListener('keydown', function(event) {
-                if (game.paused && event.key !== 'p') return;
-                
-                game.keysPressed[event.key] = true;
-                
-                // Paddling/Jumping with SPACE
-                if (event.key === ' ') {
-                    if (game.player.onWave && !game.player.jumping) {
-                        // Jump when on wave
-                        game.player.jumping = true;
-                        game.player.jumpVelocity = 12;
-                        
-                        // Create jump splash effect
-                        for (let i = 0; i < 15; i++) {
-                            createWaterParticle(
-                                game.player.x, 
-                                canvas.height * 0.7, 
-                                Math.random() * 4 - 2, 
-                                -Math.random() * 5
-                            );
-                        }
-                        
-                        // Play splash sound
-                        playSound('splash');
-                    } else if (!game.player.onWave) {
-                        // Paddle to build power
-                        game.player.paddlePower = Math.min(100, game.player.paddlePower + 5);
-                        
-                        // Create paddle splash
-                        if (game.frameCount % 5 === 0) {
-                            createWaterParticle(
-                                game.player.x - 30, 
-                                canvas.height * 0.7, 
-                                -Math.random() * 2, 
-                                -Math.random() * 2
-                            );
-                        }
-                    }
-                }
-                
-                // Catch wave with UP ARROW
-                if (event.key === 'ArrowUp' && game.player.paddlePower > 50 && !game.player.onWave) {
-                    // Start catch wave animation
-                    game.player.animation.catchingWave = true;
-                    game.player.animation.catchProgress = 0;
-                }
-                
-                // Basic trick with F
-                if (event.key === 'f' && game.player.jumping && !game.player.performingTrick) {
-                    performTrick(false);
-                }
-                
-                // Advanced trick with G (requires full trick meter)
-                if (event.key === 'g' && game.player.jumping && !game.player.performingTrick && game.player.trickPower >= 100) {
-                    performTrick(true);
-                }
-                
-                // Pause with P
-                if (event.key === 'p') {
-                    togglePauseMenu();
-                }
-                
-                // Prevent default for game keys
-                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'f', 'g', 'p'].includes(event.key)) {
-                    event.preventDefault();
-                }
-            });
-            
-            document.addEventListener('keyup', function(event) {
-                game.keysPressed[event.key] = false;
-            });
-            
-            // Pause menu buttons
-            resumeBtn.addEventListener('click', togglePauseMenu);
-            restartBtn.addEventListener('click', resetGame);
-            tutorialBtn.addEventListener('click', showTutorial);
-            
-            // Add tutorial function to window for HTML buttons to access
-            window.nextTutorialStep = nextTutorialStep;
-            window.prevTutorialStep = prevTutorialStep;
-            window.closeTutorial = closeTutorial;
-        }
-        
-        // Game loop
-        function gameLoop() {
-            // Skip updates if paused
-            if (!game.paused) {
-                // Update frame counter
-                game.frameCount++;
-                
-                // Update environment elements
-                updateEnvironment();
-                
-                // Generate collectibles and obstacles randomly
-                if (Math.random() < game.difficulty.collectibleFrequency && game.player.onWave) {
-                    createCollectible();
-                }
-                
-                if (Math.random() < game.difficulty.obstacleFrequency && game.player.onWave) {
-                    createObstacle();
-                }
-                
-                // Periodically create big surfable waves
-                if (game.frameCount % 500 === 0 && !game.visuals.bigWave.active && !game.player.onWave) {
-                    createBigWave();
-                }
-                
-                // Update big wave if active
-                if (game.visuals.bigWave.active) {
-                    game.visuals.bigWave.x += game.visuals.bigWave.speed;
-                    
-                    // Check if wave is in catching position
-                    if (game.visuals.bigWave.x > game.player.x - 50 && 
-                        game.visuals.bigWave.x < game.player.x + 50 &&
-                        game.player.paddlePower > 50 &&
-                        game.keysPressed['ArrowUp']) {
-                        
-                        // Start catching animation if not already catching
-                        if (!game.player.animation.catchingWave) {
-                            game.player.animation.catchingWave = true;
-                            game.player.animation.catchProgress = 0;
-                        }
-                    }
-                    
-                    // Remove wave when it leaves screen
-                    if (game.visuals.bigWave.x > canvas.width + 100) {
-                        game.visuals.bigWave.active = false;
-                    }
-                }
-                
-                // Update catch wave animation
-                if (game.player.animation.catchingWave) {
-                    game.player.animation.catchProgress += 0.05;
-                    
-                    // Create splash effects
-                    if (game.frameCount % 3 === 0) {
-                        for (let i = 0; i < 3; i++) {
-                            createWaterParticle(
-                                game.player.x + (Math.random() * 60 - 30), 
-                                canvas.height * 0.7 - 10, 
-                                Math.random() * 4 - 2, 
-                                -Math.random() * 3
-                            );
-                        }
-                    }
-                    
-                    // Complete catching animation
-                    if (game.player.animation.catchProgress >= 1) {
-                        game.player.animation.catchingWave = false;
-                        game.player.onWave = true;
-                        
-                        // Message
-                        showMessage("You caught the wave! Use LEFT/RIGHT to balance and SPACE to jump!");
-                        
-                        // Play wave sound
-                        playSound('wave');
-                        
-                        // More splash effects for dramatic effect
-                        for (let i = 0; i < 30; i++) {
-                            createWaterParticle(
-                                game.player.x + (Math.random() * 80 - 40), 
-                                canvas.height * 0.7, 
-                                Math.random() * 6 - 3, 
-                                -Math.random() * 6
-                            );
-                        }
-                        
-                        // If caught big wave, give bonus
-                        if (game.visuals.bigWave.active && 
-                            game.visuals.bigWave.x > game.player.x - 100 && 
-                            game.visuals.bigWave.x < game.player.x + 100) {
-                            
-                            game.player.score += 200;
-                            scoreDisplay.textContent = game.player.score;
-                            showMessage("Perfect timing! Big wave bonus: +200 points!");
-                        }
-                    }
-                }
-                
-                // Handle balance when on wave
-                if (game.player.onWave && !game.player.jumping) {
-                    const balanceRate = 0.03 * game.difficulty.balanceDifficulty;
-                    const recoveryRate = 0.01;
-                    
-                    if (game.keysPressed['ArrowLeft']) {
-                        game.player.balance = Math.max(-1, game.player.balance - balanceRate);
-                    }
-                    if (game.keysPressed['ArrowRight']) {
-                        game.player.balance = Math.min(1, game.player.balance + balanceRate);
-                    }
-                    
-                    // Natural balance recovery
-                    if (!game.keysPressed['ArrowLeft'] && !game.keysPressed['ArrowRight']) {
-                        if (game.player.balance > 0) {
-                            game.player.balance = Math.max(0, game.player.balance - recoveryRate);
-                        } else if (game.player.balance < 0) {
-                            game.player.balance = Math.min(0, game.player.balance + recoveryRate);
-                        }
-                    }
-                    
-                    // Apply wave turbulence to balance
-                    game.player.balance += (Math.random() - 0.5) * 0.02 * game.difficulty.turbulence;
-                    
-                    // Update balance UI
-                    const balancePos = (game.player.balance + 1) * 50; // Convert -1...1 to 0...100%
-                    balanceIndicator.style.left = `${balancePos}%`;
-                    
-                    if (Math.abs(game.player.balance) < 0.2) {
-                        balanceText.textContent = "Centered";
-                    } else if (game.player.balance < 0) {
-                        balanceText.textContent = "Leaning Left";
-                    } else {
-                        balanceText.textContent = "Leaning Right";
-                    }
-                    
-                    // Check for wipeout
-                    const wipeoutThreshold = 0.8;
-                    const wipeoutChance = Math.pow(Math.abs(game.player.balance), 2) * 0.05;
-                    
-                    if (Math.abs(game.player.balance) > wipeoutThreshold && Math.random() < wipeoutChance) {
-                        // Wipeout!
-                        handleWipeout("You lost your balance!");
-                    }
-                }
-                
-                // Handle jumping
-                if (game.player.jumping) {
-                    game.player.jumpVelocity -= 0.5; // Gravity
-                    game.player.y += game.player.jumpVelocity;
-                    
-                    // Land back on wave
-                    if (game.player.y <= 0) {
-                        game.player.y = 0;
-                        game.player.jumping = false;
-                        game.player.performingTrick = false;
-                        game.player.currentTrick = null;
-                        game.player.trickRotation = 0;
-                        
-                        // Create landing splash
-                        for (let i = 0; i < 20; i++) {
-                            createWaterParticle(
-                                game.player.x + (Math.random() * 60 - 30), 
-                                canvas.height * 0.7, 
-                                Math.random() * 4 - 2, 
-                                -Math.random() * 3
-                            );
-                        }
-                        
-                        // Add points for jump if no trick was performed
-                        if (!game.player.performingTrick) {
-                            game.player.score += 20;
-                            scoreDisplay.textContent = game.player.score;
-                        }
-                        
-                        // Play splash sound
-                        playSound('splash');
-                    }
-                }
-                
-                // Update trick rotation for visual effect
-                if (game.player.performingTrick && game.player.trickRotation > 0) {
-                    const rotationSpeed = 0.15;
-                    if (game.player.trickRotation > rotationSpeed) {
-                        game.player.trickRotation -= rotationSpeed;
-                    } else {
-                        game.player.trickRotation = 0;
-                        game.player.performingTrick = false;
-                    }
-                }
-                
-                // Update combo timer
-                if (game.player.combo > 1) {
-                    game.player.comboTimer--;
-                    
-                    if (game.player.comboTimer <= 0) {
-                        game.player.combo = 1;
-                        comboDisplay.textContent = 'x1';
-                        comboCounter.style.opacity = 0;
-                    }
-                }
-                
-                // Update powerup timer
-                if (game.player.powerups.active) {
-                    game.player.powerups.timeLeft--;
-                    
-                    if (game.player.powerups.timeLeft <= 0) {
-                        // End powerup effect
-                        const powerup = powerupTypes[game.player.powerups.type];
-                        if (powerup.endEffect) {
-                            powerup.endEffect();
-                        }
-                        
-                        // Reset powerup state
-                        game.player.powerups.active = false;
-                        game.player.powerups.type = null;
-                        
-                        // Update UI
-                        updatePowerupIndicator();
-                    } else {
-                        // Update timer display
-                        updatePowerupIndicator();
-                    }
-                }
-                
-                // Paddle power decay
-                if (!game.keysPressed[' '] && !game.player.onWave) {
-                    game.player.paddlePower = Math.max(0, game.player.paddlePower - 0.5);
-                }
-                
-                // Update paddle power UI
-                paddlePowerBar.style.width = `${game.player.paddlePower}%`;
-                paddlePowerText.textContent = Math.floor(game.player.paddlePower);
-                
-                // Update trick power UI
-                trickPowerBar.style.width = `${game.player.trickPower}%`;
-                trickPowerText.textContent = Math.floor(game.player.trickPower);
-                
-                // Update level progress when on wave
-                if (game.player.onWave) {
-                    // Add distance
-                    game.level.distance += 5;
-                    
-                    // Calculate progress
-                    game.level.progress = game.level.distance / game.level.maxDistance;
-                    
-                    // Update UI
-                    levelProgressBar.style.width = `${game.level.progress * 100}%`;
-                    progressText.textContent = Math.floor(game.level.progress * 100);
-                    
-                    // Add score
-                    if (game.frameCount % 10 === 0) {
-                        game.player.score += game.level.current;
-                        scoreDisplay.textContent = game.player.score;
-                    }
-                    
-                    // Check level complete
-                    if (game.level.distance >= game.level.maxDistance) {
-                        // Level up!
-                        levelUp();
-                    }
-                }
-                
-                // Update collectibles
-                updateCollectibles();
-                
-                // Update obstacles
-                updateObstacles();
-                
-                // Update water particles
-                updateParticles();
-                
-                // Move wave
-                updateWave();
-            }
-            
-            // Render the game
-            render();
-            
-            // Continue game loop
-            if (game.active) {
-                requestAnimationFrame(gameLoop);
-            }
-        }
-        
         // Handle wipeout
-        function handleWipeout(reason) {
+        function handleWipeout() {
             game.player.onWave = false;
             game.player.balance = 0;
             game.player.paddlePower = 0;
-            game.player.jumping = false;
-            game.player.wipeouts++;
-            game.player.combo = 1;
-            
-            // Update UI
-            balanceIndicator.style.left = '50%';
-            balanceText.textContent = "Centered";
-            wipeoutDisplay.textContent = game.player.wipeouts;
-            comboDisplay.textContent = 'x1';
-            comboCounter.style.opacity = 0;
-            
-            // Show message
-            showMessage(`Wipeout! ${reason} Paddle again to catch a wave.`);
-            
-            // Play wipeout sound
-            playSound('wipeout');
+            game.wipeouts++;
             
             // Create splash effect
-            for (let i = 0; i < 40; i++) {
-                createWaterParticle(
-                    game.player.x + (Math.random() * 60 - 30), 
-                    canvas.height * 0.7, 
-                    Math.random() * 8 - 4, 
-                    -Math.random() * 8
+            for (let i = 0; i < 20; i++) {
+                createParticle(
+                    game.player.x + (Math.random() * 40 - 20),
+                    canvas.height * 0.7,
+                    Math.random() * 6 - 3,
+                    -Math.random() * 6
                 );
             }
+            
+            displayMessage("Wipeout! Paddle again to catch a wave.");
         }
         
-        // Level up
-        function levelUp() {
-            game.level.current++;
-            game.level.distance = 0;
-            game.level.maxDistance *= 1.2;
+        // Update game state
+        function update() {
+            game.frameCount++;
             
-            // Increase difficulty
-            game.difficulty.waveSpeed += 0.2;
-            game.difficulty.turbulence += 0.1;
-            game.difficulty.balanceDifficulty += 0.1;
-            game.difficulty.obstacleFrequency += 0.001;
-            game.difficulty.collectibleFrequency += 0.002;
-            
-            // Reset player
-            game.player.onWave = false;
-            game.player.paddlePower = 0;
-            
-            // Update UI
-            levelDisplay.textContent = game.level.current;
-            levelProgressBar.style.width = '0%';
-            progressText.textContent = '0';
-            
-            // Add bonus points
-            game.player.score += 500;
-            scoreDisplay.textContent = game.player.score;
-            
-            // Show message
-            showMessage(`Level ${game.level.current} - Waves are getting bigger!`);
-            
-            // Play level up sound
-            playSound('levelUp');
-            
-            // Generate new wave
-            generateWave();
-            
-            // Change environment on certain levels
-            if (game.level.current % 3 === 0) {
-                changeEnvironment();
+            // Periodically create big surfable waves
+            if (game.frameCount % 300 === 0 && !game.bigWave.active && !game.player.onWave) {
+                createBigWave();
             }
             
-            // Give new surfboard on certain levels
-            if (game.level.current % 2 === 0) {
-                unlockSurfboard();
-            }
-        }
-        
-        // Change environment
-        function changeEnvironment() {
-            const environments = ['day', 'sunset', 'night'];
-            const weathers = ['clear', 'cloudy', 'stormy'];
-            
-            // Cycle through environments
-            const currentEnvIndex = environments.indexOf(game.level.environment);
-            game.level.environment = environments[(currentEnvIndex + 1) % environments.length];
-            
-            // Random weather
-            game.level.weather = weathers[Math.floor(Math.random() * weathers.length)];
-            
-            // Show message
-            showMessage(`Environment changed to ${game.level.environment} - ${game.level.weather}!`);
-        }
-        
-        // Unlock new surfboard
-        function unlockSurfboard() {
-            const boardTypes = Object.keys(surfboardTypes);
-            
-            // Select board based on level
-            const boardIndex = (game.level.current / 2 - 1) % boardTypes.length;
-            game.player.surfboardType = boardTypes[boardIndex];
-            
-            showMessage(`New surfboard unlocked: ${game.player.surfboardType}!`);
-        }
-        
-        // Update environment elements
-        function updateEnvironment() {
-            // Update clouds
-            game.environment.clouds.forEach(cloud => {
-                cloud.x -= cloud.speed;
-                if (cloud.x < -100) {
-                    cloud.x = canvas.width + 50;
-                    cloud.y = 50 + Math.random() * 100;
-                    cloud.speed = 0.2 + Math.random() * 0.5;
-                }
-            });
-            
-            // Update birds
-            game.environment.birds = game.environment.birds.filter(bird => {
-                bird.x += bird.speed;
-                return bird.x > -50 && bird.x < canvas.width + 50;
-            });
-            
-            // Create new birds occasionally
-            createBirds();
-            
-            // Update fish
-            game.environment.fish = game.environment.fish.filter(fish => {
-                // Update jump animation
-                fish.jumpProgress += fish.jumpSpeed;
+            // Update big wave if active
+            if (game.bigWave.active) {
+                game.bigWave.x += game.bigWave.speed;
                 
-                // Move fish horizontally
-                fish.x += fish.direction * 1;
-                
-                // Calculate vertical position based on jump progress
-                if (fish.jumpProgress < 1) {
-                    const jumpCurve = Math.sin(fish.jumpProgress * Math.PI);
-                    fish.y = canvas.height * 0.7 - (fish.jumpHeight * jumpCurve);
-                    return true;
-                } else {
-                    // Fish completed its jump
-                    return false;
-                }
-            });
-            
-            // Create new fish occasionally
-            createFish();
-        }
-        
-        // Update collectibles
-        function updateCollectibles() {
-            // Move and check collectibles
-            game.collectibles = game.collectibles.filter(collectible => {
-                // Move collectible
-                collectible.x -= game.difficulty.waveSpeed * 1.5;
-                
-                // Add floating animation
-                collectible.y += Math.sin(game.frameCount * 0.05) * 0.3;
-                
-                // Check for collection
-                if (game.player.onWave && !collectible.collected) {
-                    const playerBox = {
-                        x: game.player.x - 30,
-                        y: canvas.height * 0.7 - 30 - game.player.y,
-                        width: 60,
-                        height: 60
-                    };
+                // Check if wave is in catching position
+                if (game.bigWave.x > game.player.x - 50 && 
+                    game.bigWave.x < game.player.x + 50 &&
+                    game.player.paddlePower > 50 &&
+                    game.keysPressed['ArrowUp']) {
                     
-                    if (checkCollision(playerBox, collectible)) {
-                        collectible.collected = true;
-                        
-                        // Apply effect based on type
-                        if (collectible.type === 'shell') {
-                            // Add points
-                            game.player.score += collectible.points;
-                            game.player.shells++;
-                            
-                            // Update UI
-                            scoreDisplay.textContent = game.player.score;
-                            shellsDisplay.textContent = game.player.shells;
-                            
-                            // Show message
-                            showMessage(`Collected shell! +${collectible.points} points!`);
-                        } else if (collectible.type === 'powerup') {
-                            // Apply powerup
-                            applyPowerup(collectible.powerupType);
-                        }
-                        
-                        // Play collect sound
-                        playSound('collect');
-                        
-                        // Create collection particles
-                        for (let i = 0; i < 10; i++) {
-                            createWaterParticle(
-                                collectible.x,
-                                collectible.y,
-                                Math.random() * 4 - 2,
-                                Math.random() * -3
-                            );
-                        }
+                    game.player.onWave = true;
+                    displayMessage("You caught the wave!");
+                    
+                    // Create splash effect
+                    for (let i = 0; i < 15; i++) {
+                        createParticle(
+                            game.player.x + (Math.random() * 40 - 20),
+                            canvas.height * 0.7,
+                            Math.random() * 4 - 2,
+                            -Math.random() * 4
+                        );
+                    }
+                    
+                    // Add score
+                    game.score += 100;
+                }
+                
+                // Remove wave when it leaves screen
+                if (game.bigWave.x > canvas.width + 100) {
+                    game.bigWave.active = false;
+                }
+            }
+            
+            // Handle paddling
+            if (game.keysPressed[' '] && !game.player.onWave) {
+                game.player.paddlePower = Math.min(100, game.player.paddlePower + 2);
+                
+                // Create paddle splash sometimes
+                if (game.frameCount % 5 === 0) {
+                    createParticle(
+                        game.player.x - 20,
+                        canvas.height * 0.7,
+                        -Math.random(),
+                        -Math.random()
+                    );
+                }
+            } else if (!game.player.onWave) {
+                // Paddle power decay
+                game.player.paddlePower = Math.max(0, game.player.paddlePower - 0.5);
+            }
+            
+            // Handle jumping
+            if (game.keysPressed[' '] && game.player.onWave && !game.player.jumping) {
+                game.player.jumping = true;
+                game.player.jumpVelocity = 10;
+                
+                // Create jump splash
+                for (let i = 0; i < 10; i++) {
+                    createParticle(
+                        game.player.x,
+                        canvas.height * 0.7,
+                        Math.random() * 4 - 2,
+                        -Math.random() * 4
+                    );
+                }
+            }
+            
+            // Update jump
+            if (game.player.jumping) {
+                game.player.jumpVelocity -= 0.5; // Gravity
+                game.player.y += game.player.jumpVelocity;
+                
+                // Land back on wave
+                if (game.player.y <= 0) {
+                    game.player.y = 0;
+                    game.player.jumping = false;
+                    
+                    // Add points for jump
+                    game.score += 20;
+                    
+                    // Create landing splash
+                    for (let i = 0; i < 10; i++) {
+                        createParticle(
+                            game.player.x + (Math.random() * 40 - 20),
+                            canvas.height * 0.7,
+                            Math.random() * 3 - 1.5,
+                            -Math.random() * 2
+                        );
+                    }
+                }
+            }
+            
+            // Handle balance when on wave
+            if (game.player.onWave && !game.player.jumping) {
+                const balanceRate = 0.03 * (1 + game.level * 0.1);
+                const recoveryRate = 0.01;
+                
+                if (game.keysPressed['ArrowLeft']) {
+                    game.player.balance = Math.max(-1, game.player.balance - balanceRate);
+                }
+                if (game.keysPressed['ArrowRight']) {
+                    game.player.balance = Math.min(1, game.player.balance + balanceRate);
+                }
+                
+                // Natural balance recovery
+                if (!game.keysPressed['ArrowLeft'] && !game.keysPressed['ArrowRight']) {
+                    if (game.player.balance > 0) {
+                        game.player.balance = Math.max(0, game.player.balance - recoveryRate);
+                    } else if (game.player.balance < 0) {
+                        game.player.balance = Math.min(0, game.player.balance + recoveryRate);
                     }
                 }
                 
-                // Remove if off screen or collected
-                return collectible.x > -50 && !collectible.collected;
-            });
-        }
-        
-        // Update obstacles
-        function updateObstacles() {
-            // Move and check obstacles
-            game.obstacles = game.obstacles.filter(obstacle => {
-                // Move obstacle
-                if (obstacle.type === 'surfer') {
-                    // Other surfers move at variable speeds
-                    obstacle.x -= game.difficulty.waveSpeed * obstacle.speed;
-                } else {
-                    // Rocks move with the wave
-                    obstacle.x -= game.difficulty.waveSpeed * 1.2;
+                // Apply wave turbulence to balance
+                game.player.balance += (Math.random() - 0.5) * 0.02;
+                
+                // Check for wipeout
+                if (Math.abs(game.player.balance) > 0.8 && Math.random() < 0.05) {
+                    handleWipeout();
                 }
                 
-                // Check for collision
-                if (game.player.onWave && !obstacle.hit) {
-                    const playerBox = {
-                        x: game.player.x - 25,
-                        y: canvas.height * 0.7 - 25 - game.player.y,
-                        width: 50,
-                        height: 50
-                    };
-                    
-                    // Player can jump over obstacles
-                    if (!game.player.jumping && checkCollision(playerBox, obstacle)) {
-                        obstacle.hit = true;
-                        
-                        // Cause wipeout
-                        handleWipeout(`You hit a ${obstacle.type}!`);
-                    }
+                // Add score when riding wave
+                if (game.frameCount % 10 === 0) {
+                    game.score += game.level;
                 }
-                
-                // Remove if off screen or hit
-                return obstacle.x > -100 && !obstacle.hit;
-            });
-        }
-        
-        // Update particles
-        function updateParticles() {
+            }
+            
             // Update water particles
-            for (let i = game.waterParticles.length - 1; i >= 0; i--) {
-                const particle = game.waterParticles[i];
+            for (let i = game.particles.length - 1; i >= 0; i--) {
+                const particle = game.particles[i];
                 
                 // Move particle
                 particle.x += particle.vx;
@@ -2117,60 +308,17 @@
                 
                 // Remove dead particles
                 if (particle.life <= 0) {
-                    game.waterParticles.splice(i, 1);
+                    game.particles.splice(i, 1);
                 }
             }
             
-            // Update foam particles
-            for (let i = game.foamParticles.length - 1; i >= 0; i--) {
-                const foam = game.foamParticles[i];
-                
-                // Move foam
-                foam.x += foam.vx;
-                foam.y += foam.vy;
-                foam.life--;
-                foam.alpha = foam.life / 70;
-                
-                // Remove dead foam
-                if (foam.life <= 0) {
-                    game.foamParticles.splice(i, 1);
-                }
-            }
-            
-            // Create new foam particles along wave
-            if (game.player.onWave && game.frameCount % 5 === 0) {
-                createFoamParticle(
-                    game.player.x + (Math.random() * 80 - 40),
-                    canvas.height * 0.7 - 5
-                );
-            }
-        }
-        
-        // Update wave
-        function updateWave() {
+            // Move wave points
             for (let i = 0; i < game.wave.length; i++) {
-                game.wave[i].x -= game.difficulty.waveSpeed;
+                game.wave[i].x -= 2;
                 
-                // Create subtle wave animation
+                // Add subtle wave animation
                 if (i % 5 === 0) {
                     game.wave[i].y += Math.sin(game.frameCount * 0.05 + i * 0.1) * 0.05;
-                }
-                
-                // Add occasional glowing highlights
-                if (Math.random() < 0.001) {
-                    game.wave[i].glowing = true;
-                    
-                    // Add nearby points to create a patch
-                    for (let j = Math.max(0, i-3); j < Math.min(game.wave.length, i+3); j++) {
-                        if (Math.random() < 0.7) {
-                            game.wave[j].glowing = true;
-                        }
-                    }
-                }
-                
-                // Remove glowing effect after some time
-                if (game.wave[i].glowing && Math.random() < 0.05) {
-                    game.wave[i].glowing = false;
                 }
             }
             
@@ -2178,1334 +326,404 @@
             game.wave = game.wave.filter(p => p.x > -5);
             
             // Add new wave points
-            const lastPoint = game.wave[game.wave.length - 1];
-            if (lastPoint && lastPoint.x < 195) {
-                const newX = lastPoint.x + 0.5;
-                const newY = 5 * Math.sin(newX * 0.1) + 
-                            2 * Math.sin(newX * 0.2) + 
-                            game.difficulty.turbulence * Math.random();
-                            
-                game.wave.push({ 
-                    x: newX, 
-                    y: newY,
-                    glowing: false
-                });
+            while (game.wave.length > 0 && game.wave[game.wave.length - 1].x < canvas.width) {
+                const lastPoint = game.wave[game.wave.length - 1];
+                const newX = lastPoint.x + 5;
+                const newY = 5 * Math.sin(newX * 0.01) + 
+                          2 * Math.sin(newX * 0.02) + 
+                          Math.random() * 2;
+                          
+                game.wave.push({ x: newX, y: newY });
+            }
+            
+            // Level up if score reaches threshold
+            if (game.score > game.level * 1000 && game.player.onWave) {
+                game.level++;
+                displayMessage(`Level ${game.level}! Waves are getting bigger!`);
+                
+                // Reset player
+                game.player.onWave = false;
+                game.player.paddlePower = 0;
+                
+                // Add bonus points
+                game.score += 500;
             }
         }
         
-        // Render function
-        function render() {
+        // Draw game
+        function draw() {
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw background based on environment
-            drawBackground();
-            
-            // Draw islands
-            drawIslands();
-            
-            // Draw clouds
-            drawClouds();
-            
-            // Draw birds
-            drawBirds();
-            
-            // Draw water base
-            drawWaterBase();
-            
-            // Draw wave
-            drawWave();
-            
-            // Draw big wave if active
-            if (game.visuals.bigWave.active) {
-                drawBigWave();
-            }
-            
-            // Draw fish
-            drawFish();
-            
-            // Draw collectibles
-            drawCollectibles();
-            
-            // Draw obstacles
-            drawObstacles();
-            
-            // Draw foam particles
-            drawFoamParticles();
-            
-            // Draw water particles
-            drawWaterParticles();
-            
-            // Draw player with appropriate state
-            drawPlayer();
-            
-            // Draw UI elements
-            drawUI();
-        }
-        
-        // Draw background based on current environment
-        function drawBackground() {
-            let skyColors = {
-                day: { top: '#1E90FF', bottom: '#87CEEB' },
-                sunset: { top: '#FF7F50', bottom: '#FFA07A' },
-                night: { top: '#191970', bottom: '#483D8B' }
-            };
-            
-            let currentEnv = skyColors[game.level.environment] || skyColors.day;
-            
-            // Sky gradient
-            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.7);
-            skyGradient.addColorStop(0, currentEnv.top);
-            skyGradient.addColorStop(1, currentEnv.bottom);
-            ctx.fillStyle = skyGradient;
+            // Draw sky
+            ctx.fillStyle = '#87CEEB';
             ctx.fillRect(0, 0, canvas.width, canvas.height * 0.7);
             
-            // Draw sun or moon
-            ctx.save();
-            
-            if (game.level.environment === 'night') {
-                // Moon
-                const moonX = canvas.width * 0.8;
-                const moonY = canvas.height * 0.2;
-                
-                // Moon glow
-                const gradient = ctx.createRadialGradient(moonX, moonY, 25, moonX, moonY, 60);
-                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(moonX, moonY, 60, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Moon
-                ctx.fillStyle = '#FFFFFF';
-                ctx.beginPath();
-                ctx.arc(moonX, moonY, 25, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Add moon craters
-                ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
-                ctx.beginPath();
-                ctx.arc(moonX - 10, moonY - 5, 5, 0, Math.PI * 2);
-                ctx.arc(moonX + 7, moonY + 10, 7, 0, Math.PI * 2);
-                ctx.arc(moonX + 5, moonY - 12, 3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Add stars
-                ctx.fillStyle = 'white';
-                for (let i = 0; i < 50; i++) {
-                    const x = Math.random() * canvas.width;
-                    const y = Math.random() * canvas.height * 0.6;
-                    const size = Math.random() * 2 + 1;
-                    
-                    ctx.beginPath();
-                    ctx.arc(x, y, size, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Make some stars twinkle
-                    if (Math.random() < 0.05) {
-                        ctx.save();
-                        ctx.globalAlpha = 0.6 + 0.4 * Math.sin(game.frameCount * 0.1 + i);
-                        ctx.fillStyle = 'white';
-                        ctx.beginPath();
-                        ctx.arc(x, y, size * 1.5, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.restore();
-                    }
-                }
-            } else if (game.level.environment === 'sunset') {
-                // Sun at sunset
-                const sunX = canvas.width * 0.8;
-                const sunY = canvas.height * 0.4;
-                
-                // Sun glow
-                const gradient = ctx.createRadialGradient(sunX, sunY, 30, sunX, sunY, 100);
-                gradient.addColorStop(0, 'rgba(255, 140, 0, 0.8)');
-                gradient.addColorStop(1, 'rgba(255, 69, 0, 0)');
-                
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(sunX, sunY, 100, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Sun
-                ctx.fillStyle = '#FF4500';
-                ctx.beginPath();
-                ctx.arc(sunX, sunY, 30, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Add sun rays
-                ctx.strokeStyle = 'rgba(255, 140, 0, 0.6)';
-                ctx.lineWidth = 3;
-                
-                for (let i = 0; i < 12; i++) {
-                    const angle = (i / 12) * Math.PI * 2;
-                    const rayLength = 50 + Math.sin(game.frameCount * 0.05 + i) * 10;
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(
-                        sunX + Math.cos(angle) * 35,
-                        sunY + Math.sin(angle) * 35
-                    );
-                    ctx.lineTo(
-                        sunX + Math.cos(angle) * (35 + rayLength),
-                        sunY + Math.sin(angle) * (35 + rayLength)
-                    );
-                    ctx.stroke();
-                }
-            } else {
-                // Day sun
-                const sunX = canvas.width * 0.8;
-                const sunY = canvas.height * 0.2;
-                
-                // Sun glow
-                const gradient = ctx.createRadialGradient(sunX, sunY, 20, sunX, sunY, 60);
-                gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
-                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
-                
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(sunX, sunY, 60, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Sun
-                ctx.fillStyle = '#FFD700';
-                ctx.beginPath();
-                ctx.arc(sunX, sunY, 20, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            ctx.restore();
-            
-            // Weather effects
-            if (game.level.weather === 'cloudy') {
-                // Add extra clouds for cloudy weather
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                for (let i = 0; i < 3; i++) {
-                    const x = (i * 300) + (game.frameCount * 0.2) % 900 - 300;
-                    const y = 150 + i * 30;
-                    const scale = 1.5 + i * 0.5;
-                    
-                    drawCloud(x, y, 100 * scale, 50 * scale);
-                }
-            } else if (game.level.weather === 'stormy') {
-                // Add storm effects
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height * 0.7);
-                
-                // Add lightning occasionally
-                if (Math.random() < 0.01) {
-                    ctx.save();
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    
-                    const x = Math.random() * canvas.width;
-                    const startY = 0;
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(x, startY);
-                    
-                    let currentX = x;
-                    let currentY = startY;
-                    
-                    while (currentY < canvas.height * 0.7) {
-                        currentX += (Math.random() - 0.5) * 30;
-                        currentY += 20;
-                        
-                        ctx.lineTo(currentX, currentY);
-                    }
-                    
-                    ctx.lineWidth = 3;
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.stroke();
-                    
-                    ctx.lineWidth = 6;
-                    ctx.strokeStyle = 'rgba(200, 230, 255, 0.5)';
-                    ctx.stroke();
-                    
-                    ctx.restore();
-                }
-                
-                // Add rain
-                ctx.strokeStyle = 'rgba(200, 230, 255, 0.7)';
-                ctx.lineWidth = 1;
-                
-                for (let i = 0; i < 100; i++) {
-                    const x = Math.random() * canvas.width;
-                    const y = (Math.random() * canvas.height * 0.7) + (game.frameCount * 10 + i * 5) % (canvas.height * 0.7);
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x - 2, y + 10);
-                    ctx.stroke();
-                }
-            }
-        }
-        
-        // Draw clouds
-        function drawClouds() {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            
-            game.environment.clouds.forEach(cloud => {
-                drawCloud(cloud.x, cloud.y, 100 * cloud.scale, 50 * cloud.scale);
-            });
-        }
-        
-        // Helper function to draw a cloud
-        function drawCloud(x, y, width, height) {
+            // Draw sun
+            ctx.fillStyle = '#FFD700';
             ctx.beginPath();
-            ctx.arc(x, y, height, 0, Math.PI * 2);
-            ctx.arc(x + width * 0.3, y - height * 0.2, height * 0.8, 0, Math.PI * 2);
-            ctx.arc(x + width * 0.6, y, height * 0.9, 0, Math.PI * 2);
+            ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 20, 0, Math.PI * 2);
             ctx.fill();
             
-            // Add shadow underneath
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.beginPath();
-            ctx.ellipse(x + width * 0.3, y + height * 0.8, width * 0.5, height * 0.3, 0, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        }
-        
-        // Draw birds
-        function drawBirds() {
-            ctx.save();
-            
-            game.environment.birds.forEach(bird => {
-                const x = bird.x;
-                const y = bird.y;
-                const flapState = Math.sin(game.frameCount * bird.flapSpeed + bird.flapOffset);
-                const wingSpan = 15 * bird.scale;
-                
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                
-                // Draw bird body
-                ctx.beginPath();
-                ctx.ellipse(x, y, 8 * bird.scale, 4 * bird.scale, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw wings
-                ctx.beginPath();
-                if (bird.speed > 0) {
-                    // Flying right
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x - wingSpan, y - wingSpan * flapState);
-                    ctx.lineTo(x - wingSpan * 0.7, y);
-                    ctx.fill();
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x - wingSpan * 0.7, y + wingSpan * 0.3);
-                    ctx.lineTo(x - wingSpan, y + wingSpan * 0.6);
-                    ctx.fill();
-                } else {
-                    // Flying left
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x + wingSpan, y - wingSpan * flapState);
-                    ctx.lineTo(x + wingSpan * 0.7, y);
-                    ctx.fill();
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x + wingSpan * 0.7, y + wingSpan * 0.3);
-                    ctx.lineTo(x + wingSpan, y + wingSpan * 0.6);
-                    ctx.fill();
-                }
-            });
-            
-            ctx.restore();
-        }
-        
-        // Draw islands
-        function drawIslands() {
-            ctx.save();
-            
-            game.environment.islands.forEach(island => {
-                const x = island.x;
-                const y = island.y;
-                const scale = island.scale;
-                
-                // Draw island base
-                ctx.fillStyle = '#8B4513';
-                ctx.beginPath();
-                ctx.ellipse(x, y + 20, 100 * scale, 30 * scale, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw island top
-                ctx.fillStyle = '#228B22';
-                ctx.beginPath();
-                ctx.ellipse(x, y, 80 * scale, 25 * scale, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Draw palm trees
-                const treeCount = Math.floor(3 * scale);
-                for (let i = 0; i < treeCount; i++) {
-                    const treeX = x + (i - treeCount/2) * 30 * scale;
-                    const treeY = y - 10 * scale;
-                    
-                    // Tree trunk
-                    ctx.fillStyle = '#8B4513';
-                    ctx.beginPath();
-                    ctx.rect(treeX - 3 * scale, treeY, 6 * scale, 20 * scale);
-                    ctx.fill();
-                    
-                    // Tree leaves
-                    ctx.fillStyle = '#32CD32';
-                    for (let j = 0; j < 3; j++) {
-                        const angle = (j / 3) * Math.PI * 2 + Math.sin(game.frameCount * 0.02 + i) * 0.1;
-                        const leafSize = 15 * scale;
-                        
-                        ctx.beginPath();
-                        ctx.ellipse(
-                            treeX + Math.cos(angle) * 5 * scale,
-                            treeY - 15 * scale + Math.sin(angle) * 5 * scale,
-                            leafSize,
-                            leafSize / 2,
-                            angle,
-                            0,
-                            Math.PI * 2
-                        );
-                        ctx.fill();
-                    }
-                }
-            });
-            
-            ctx.restore();
-        }
-        
-        // Draw fish
-        function drawFish() {
-            ctx.save();
-            
-            game.environment.fish.forEach(fish => {
-                const x = fish.x;
-                const y = fish.y;
-                const scale = fish.scale;
-                const direction = fish.direction;
-                
-                // Fish body
-                ctx.fillStyle = '#4169E1';
-                ctx.beginPath();
-                ctx.ellipse(x, y, 15 * scale, 8 * scale, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Fish tail
-                ctx.beginPath();
-                if (direction > 0) {
-                    // Swimming right
-                    ctx.moveTo(x - 12 * scale, y);
-                    ctx.lineTo(x - 25 * scale, y - 10 * scale);
-                    ctx.lineTo(x - 25 * scale, y + 10 * scale);
-                    ctx.closePath();
-                } else {
-                    // Swimming left
-                    ctx.moveTo(x + 12 * scale, y);
-                    ctx.lineTo(x + 25 * scale, y - 10 * scale);
-                    ctx.lineTo(x + 25 * scale, y + 10 * scale);
-                    ctx.closePath();
-                }
-                ctx.fill();
-                
-                // Fish eye
-                ctx.fillStyle = 'white';
-                if (direction > 0) {
-                    ctx.beginPath();
-                    ctx.arc(x + 7 * scale, y - 3 * scale, 3 * scale, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = 'black';
-                    ctx.beginPath();
-                    ctx.arc(x + 8 * scale, y - 3 * scale, 1.5 * scale, 0, Math.PI * 2);
-                    ctx.fill();
-                } else {
-                    ctx.beginPath();
-                    ctx.arc(x - 7 * scale, y - 3 * scale, 3 * scale, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = 'black';
-                    ctx.beginPath();
-                    ctx.arc(x - 8 * scale, y - 3 * scale, 1.5 * scale, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                
-                // Water splash for jumping fish
-                if (fish.jumpProgress > 0.3 && fish.jumpProgress < 0.7) {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    for (let i = 0; i < 5; i++) {
-                        const splashX = x + (Math.random() * 20 - 10) * scale;
-                        const splashY = canvas.height * 0.7 + (Math.random() * 5) * scale;
-                        const splashSize = (Math.random() * 3 + 2) * scale;
-                        
-                        ctx.beginPath();
-                        ctx.arc(splashX, splashY, splashSize, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-            });
-            
-            ctx.restore();
-        }
-        
-        // Draw water base
-        function drawWaterBase() {
+            // Draw water base
             const waterHeight = canvas.height * 0.7;
-            
-            // Water base color based on environment
-            let waterColors = {
-                day: { top: '#4682B4', bottom: '#36648B' },
-                sunset: { top: '#4169E1', bottom: '#191970' },
-                night: { top: '#191970', bottom: '#000080' }
-            };
-            
-            let currentWater = waterColors[game.level.environment] || waterColors.day;
-            
-            const waterGradient = ctx.createLinearGradient(0, waterHeight, 0, canvas.height);
-            waterGradient.addColorStop(0, currentWater.top);
-            waterGradient.addColorStop(1, currentWater.bottom);
-            
-            ctx.fillStyle = waterGradient;
+            ctx.fillStyle = '#4682B4';
             ctx.fillRect(0, waterHeight, canvas.width, canvas.height - waterHeight);
             
-            // Add subtle horizontal lines to water
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 1;
-            
-            for (let y = waterHeight + 20; y < canvas.height; y += 15) {
+            // Draw wave
+            if (game.wave.length > 0) {
                 ctx.beginPath();
-                ctx.moveTo(0, y + Math.sin(game.frameCount * 0.02) * 2);
+                ctx.moveTo(0, waterHeight);
                 
-                for (let x = 0; x < canvas.width; x += 20) {
-                    ctx.lineTo(x, y + Math.sin(game.frameCount * 0.02 + x * 0.01) * 2);
+                for (const point of game.wave) {
+                    const y = waterHeight - (point.y * 5);
+                    ctx.lineTo(point.x, y);
+                }
+                
+                ctx.lineTo(canvas.width, waterHeight);
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+                
+                ctx.fillStyle = '#4682B4';
+                ctx.fill();
+                
+                // Draw wave foam
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                for (const point of game.wave) {
+                    const y = waterHeight - (point.y * 5);
+                    if (point === game.wave[0]) {
+                        ctx.moveTo(point.x, y);
+                    } else {
+                        ctx.lineTo(point.x, y);
+                    }
                 }
                 
                 ctx.stroke();
             }
-        }
-        
-        // Draw wave
-        function drawWave() {
-            if (game.wave.length === 0) return;
             
-            const waterHeight = canvas.height * 0.7;
-            
-            ctx.beginPath();
-            ctx.moveTo(0, waterHeight);
-            
-            for (const point of game.wave) {
-                const x = point.x * (canvas.width / 200);
-                const y = waterHeight - (point.y * 5);
-                ctx.lineTo(x, y);
-            }
-            
-            ctx.lineTo(canvas.width, waterHeight);
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.lineTo(0, canvas.height);
-            ctx.closePath();
-            
-            // Wave color based on environment
-            let waveColors = {
-                day: { top: '#87CEFA', middle: '#4682B4', bottom: '#36648B' },
-                sunset: { top: '#6495ED', middle: '#4169E1', bottom: '#191970' },
-                night: { top: '#4682B4', middle: '#191970', bottom: '#000080' }
-            };
-            
-            let currentWave = waveColors[game.level.environment] || waveColors.day;
-            
-            const waveGradient = ctx.createLinearGradient(0, waterHeight - 30, 0, canvas.height);
-            waveGradient.addColorStop(0, currentWave.top);
-            waveGradient.addColorStop(0.5, currentWave.middle);
-            waveGradient.addColorStop(1, currentWave.bottom);
-            
-            ctx.fillStyle = waveGradient;
-            ctx.fill();
-            
-            // Add white foam at top of wave
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            
-            for (const point of game.wave) {
-                const x = point.x * (canvas.width / 200);
-                const y = waterHeight - (point.y * 5);
-                if (point === game.wave[0]) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            
-            ctx.stroke();
-            
-            // Draw glowing wave parts
-            ctx.save();
-            ctx.beginPath();
-            let inGlowRegion = false;
-            let startX = 0;
-            
-            for (let i = 0; i < game.wave.length; i++) {
-                const point = game.wave[i];
-                const x = point.x * (canvas.width / 200);
-                const y = waterHeight - (point.y * 5);
+            // Draw big wave if active
+            if (game.bigWave.active) {
+                const waveX = game.bigWave.x;
+                const waveWidth = game.bigWave.width;
+                const waveHeight = game.bigWave.height;
                 
-                if (point.glowing && !inGlowRegion) {
-                    inGlowRegion = true;
-                    startX = x;
-                    ctx.moveTo(x, y);
-                } else if (point.glowing) {
-                    ctx.lineTo(x, y);
-                } else if (!point.glowing && inGlowRegion) {
-                    inGlowRegion = false;
-                    
-                    // Draw glow effect
-                    ctx.shadowColor = '#87CEFA';
-                    ctx.shadowBlur = 10;
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-                    
-                    ctx.shadowBlur = 0;
-                    ctx.beginPath();
-                }
-            }
-            
-            if (inGlowRegion) {
-                // Draw final glow section
-                ctx.shadowColor = '#87CEFA';
-                ctx.shadowBlur = 10;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fillStyle = '#87CEFA';
+                
+                // Draw wave curve
+                ctx.beginPath();
+                ctx.moveTo(waveX - waveWidth/2, waterHeight);
+                
+                // Draw curve
+                ctx.bezierCurveTo(
+                    waveX - waveWidth/3, waterHeight,
+                    waveX - waveWidth/6, waterHeight - waveHeight,
+                    waveX, waterHeight - waveHeight
+                );
+                
+                ctx.bezierCurveTo(
+                    waveX + waveWidth/6, waterHeight - waveHeight * 0.6,
+                    waveX + waveWidth/3, waterHeight - waveHeight * 0.3,
+                    waveX + waveWidth/2, waterHeight
+                );
+                
+                ctx.closePath();
+                ctx.fill();
+                
+                // Draw foam at wave crest
+                ctx.strokeStyle = 'white';
                 ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(waveX - waveWidth/6, waterHeight - waveHeight * 0.9);
+                ctx.quadraticCurveTo(
+                    waveX, waterHeight - waveHeight * 1.1,
+                    waveX + waveWidth/6, waterHeight - waveHeight * 0.9
+                );
                 ctx.stroke();
             }
             
-            ctx.restore();
-        }
-        
-        // Draw big wave
-        function drawBigWave() {
-            const waterHeight = canvas.height * 0.7;
-            const waveX = game.visuals.bigWave.x;
-            const waveWidth = game.visuals.bigWave.width;
-            const waveHeight = game.visuals.bigWave.height;
-            
-            // Draw wave shape
-            ctx.save();
-            
-            // Wave glow effect
-            ctx.shadowColor = '#87CEFA';
-            ctx.shadowBlur = 15;
-            
-            // Wave color based on environment
-            let waveColors = {
-                day: { top: '#87CEFA', bottom: '#4682B4' },
-                sunset: { top: '#6495ED', bottom: '#4169E1' },
-                night: { top: '#4682B4', bottom: '#191970' }
-            };
-            
-            let currentWave = waveColors[game.level.environment] || waveColors.day;
-            
-            const bigWaveGradient = ctx.createLinearGradient(
-                waveX, waterHeight - waveHeight, 
-                waveX, waterHeight
-            );
-            bigWaveGradient.addColorStop(0, currentWave.top);
-            bigWaveGradient.addColorStop(1, currentWave.bottom);
-            
-            ctx.fillStyle = bigWaveGradient;
-            
-            // Draw wave curve
-            ctx.beginPath();
-            ctx.moveTo(waveX - waveWidth/2, waterHeight);
-            
-            // Control points for curve
-            ctx.bezierCurveTo(
-                waveX - waveWidth/3, waterHeight,
-                waveX - waveWidth/6, waterHeight - waveHeight * 0.8,
-                waveX, waterHeight - waveHeight
-            );
-            
-            ctx.bezierCurveTo(
-                waveX + waveWidth/6, waterHeight - waveHeight * 0.6,
-                waveX + waveWidth/3, waterHeight - waveHeight * 0.3,
-                waveX + waveWidth/2, waterHeight
-            );
-            
-            ctx.lineTo(waveX - waveWidth/2, waterHeight);
-            ctx.closePath();
-            ctx.fill();
-            
-            // Wave foam/crest
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(waveX - waveWidth/6, waterHeight - waveHeight * 0.8);
-            ctx.bezierCurveTo(
-                waveX - waveWidth/12, waterHeight - waveHeight * 0.9,
-                waveX, waterHeight - waveHeight,
-                waveX + waveWidth/12, waterHeight - waveHeight * 0.9
-            );
-            ctx.stroke();
-            
-            // Small foam particles
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            for (let i = 0; i < 20; i++) {
-                const foamX = waveX + Math.cos(game.frameCount * 0.1 + i) * waveWidth/4;
-                const foamY = waterHeight - waveHeight * 0.9 + Math.sin(game.frameCount * 0.1 + i * 2) * 5;
-                const size = 2 + Math.random() * 3;
-                
-                ctx.beginPath();
-                ctx.arc(foamX, foamY, size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            // Add foam at the base of the wave
-            for (let i = 0; i < 15; i++) {
-                const foamX = waveX - waveWidth/2 + Math.random() * waveWidth;
-                const foamY = waterHeight - 5 + Math.random() * 10;
-                const size = 3 + Math.random() * 4;
-                
-                ctx.beginPath();
-                ctx.arc(foamX, foamY, size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            ctx.restore();
-        }
-        
-        // Draw water particles
-        function drawWaterParticles() {
-            ctx.save();
-            
-            for (const particle of game.waterParticles) {
+            // Draw water particles
+            for (const particle of game.particles) {
                 ctx.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
                 ctx.beginPath();
                 ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
                 ctx.fill();
             }
             
-            ctx.restore();
-        }
-        
-        // Draw foam particles
-        function drawFoamParticles() {
-            ctx.save();
+            // Draw player
+            const surfboardWidth = 50;
+            const surfboardHeight = 10;
             
-            for (const foam of game.foamParticles) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${foam.alpha})`;
-                ctx.beginPath();
-                ctx.arc(foam.x, foam.y, foam.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            ctx.restore();
-        }
-        
-        // Draw collectibles
-        function drawCollectibles() {
-            ctx.save();
-            
-            game.collectibles.forEach(collectible => {
-                if (collectible.type === 'shell') {
-                    // Draw shell
-                    ctx.fillStyle = '#FFA07A';
-                    ctx.beginPath();
-                    ctx.arc(collectible.x, collectible.y, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Shell details
-                    ctx.strokeStyle = '#FF7F50';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(collectible.x, collectible.y, 6, 0, Math.PI, true);
-                    ctx.stroke();
-                    
-                    // Add glow effect
-                    ctx.shadowColor = '#FFA07A';
-                    ctx.shadowBlur = 10;
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                    ctx.beginPath();
-                    ctx.arc(collectible.x - 3, collectible.y - 3, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (collectible.type === 'powerup') {
-                    // Draw powerup
-                    let powerupColor;
-                    switch (collectible.powerupType) {
-                        case 'speed':
-                            powerupColor = '#2196F3';
-                            break;
-                        case 'balance':
-                            powerupColor = '#4CAF50';
-                            break;
-                        case 'trick':
-                            powerupColor = '#9C27B0';
-                            break;
-                        default:
-                            powerupColor = '#FFC107';
-                    }
-                    
-                    // Powerup orb
-                    ctx.fillStyle = powerupColor;
-                    ctx.shadowColor = powerupColor;
-                    ctx.shadowBlur = 15;
-                    ctx.beginPath();
-                    ctx.arc(collectible.x, collectible.y, 15, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Pulsing effect
-                    const pulseSize = 15 + Math.sin(game.frameCount * 0.1) * 3;
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(collectible.x, collectible.y, pulseSize, 0, Math.PI * 2);
-                    ctx.stroke();
-                    
-                    // Inner glow
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.beginPath();
-                    ctx.arc(collectible.x - 5, collectible.y - 5, 5, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Icon based on type
-                    ctx.fillStyle = 'white';
-                    ctx.strokeStyle = 'white';
-                    ctx.lineWidth = 2;
-                    
-                    if (collectible.powerupType === 'speed') {
-                        // Lightning bolt
-                        ctx.beginPath();
-                        ctx.moveTo(collectible.x - 5, collectible.y - 5);
-                        ctx.lineTo(collectible.x + 3, collectible.y - 2);
-                        ctx.lineTo(collectible.x - 3, collectible.y + 5);
-                        ctx.lineTo(collectible.x + 5, collectible.y + 2);
-                        ctx.stroke();
-                    } else if (collectible.powerupType === 'balance') {
-                        // Balance icon
-                        ctx.beginPath();
-                        ctx.moveTo(collectible.x - 7, collectible.y + 5);
-                        ctx.lineTo(collectible.x + 7, collectible.y + 5);
-                        ctx.stroke();
-                        
-                        ctx.beginPath();
-                        ctx.arc(collectible.x, collectible.y, 3, 0, Math.PI * 2);
-                        ctx.fill();
-                    } else if (collectible.powerupType === 'trick') {
-                        // Star
-                        const starPoints = 5;
-                        const outerRadius = 7;
-                        const innerRadius = 3;
-                        
-                        ctx.beginPath();
-                        
-                        for (let i = 0; i < starPoints * 2; i++) {
-                            const radius = i % 2 === 0 ? outerRadius : innerRadius;
-                            const angle = (i / (starPoints * 2)) * Math.PI * 2;
-                            
-                            const x = collectible.x + Math.cos(angle) * radius;
-                            const y = collectible.y + Math.sin(angle) * radius;
-                            
-                            if (i === 0) {
-                                ctx.moveTo(x, y);
-                            } else {
-                                ctx.lineTo(x, y);
-                            }
-                        }
-                        
-                        ctx.closePath();
-                        ctx.fill();
-                    }
-                }
-            });
-            
-            ctx.restore();
-        }
-        
-        // Draw obstacles
-        function drawObstacles() {
-            ctx.save();
-            
-            game.obstacles.forEach(obstacle => {
-                if (obstacle.type === 'rock') {
-                    // Draw rock
-                    const waterHeight = canvas.height * 0.7;
-                    
-                    // Rock shadow
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.beginPath();
-                    ctx.ellipse(obstacle.x + 5, waterHeight + 5, obstacle.width / 2, obstacle.height / 4, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Rock body
-                    const rockGradient = ctx.createLinearGradient(
-                        obstacle.x - obstacle.width/2, 
-                        obstacle.y - obstacle.height/2,
-                        obstacle.x + obstacle.width/2, 
-                        obstacle.y + obstacle.height/2
-                    );
-                    
-                    rockGradient.addColorStop(0, '#696969');
-                    rockGradient.addColorStop(0.5, '#808080');
-                    rockGradient.addColorStop(1, '#A9A9A9');
-                    
-                    ctx.fillStyle = rockGradient;
-                    
-                    // Jagged rock shape
-                    ctx.beginPath();
-                    ctx.moveTo(obstacle.x - obstacle.width/2, waterHeight);
-                    
-                    // Left side jagged edge
-                    for (let i = 0; i < 3; i++) {
-                        const y = waterHeight - (obstacle.height * (i+1)/3);
-                        const jag = Math.sin(i + obstacle.x * 0.1) * 5;
-                        
-                        ctx.lineTo(obstacle.x - obstacle.width/2 + jag, y);
-                    }
-                    
-                    // Top jagged edge
-                    for (let i = 0; i < 4; i++) {
-                        const x = obstacle.x - obstacle.width/2 + obstacle.width * (i+1)/4;
-                        const jag = Math.sin(i + obstacle.x * 0.1) * 5;
-                        
-                        ctx.lineTo(x, obstacle.y - obstacle.height/2 + jag);
-                    }
-                    
-                    // Right side jagged edge
-                    for (let i = 2; i >= 0; i--) {
-                        const y = waterHeight - (obstacle.height * (i+1)/3);
-                        const jag = Math.sin(i + obstacle.x * 0.2) * 5;
-                        
-                        ctx.lineTo(obstacle.x + obstacle.width/2 + jag, y);
-                    }
-                    
-                    ctx.lineTo(obstacle.x + obstacle.width/2, waterHeight);
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // Rock highlights
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                    ctx.beginPath();
-                    ctx.arc(obstacle.x - obstacle.width/4, obstacle.y - obstacle.height/3, obstacle.width/10, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Water splash around the rock
-                    if (game.frameCount % 10 === 0) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                        
-                        for (let i = 0; i < 3; i++) {
-                            const splashX = obstacle.x + (Math.random() * obstacle.width - obstacle.width/2);
-                            const splashY = waterHeight + Math.random() * 5;
-                            const size = 2 + Math.random() * 3;
-                            
-                            ctx.beginPath();
-                            ctx.arc(splashX, splashY, size, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                    }
-                } else if (obstacle.type === 'surfer') {
-                    // Draw other surfer
-                    const waterHeight = canvas.height * 0.7;
-                    
-                    // Draw surfboard
-                    const surfboardGradient = ctx.createLinearGradient(
-                        obstacle.x - 25, obstacle.y + 15,
-                        obstacle.x + 25, obstacle.y + 15
-                    );
-                    surfboardGradient.addColorStop(0, '#FFD700');
-                    surfboardGradient.addColorStop(0.5, '#FFFFFF');
-                    surfboardGradient.addColorStop(1, '#FFD700');
-                    
-                    ctx.fillStyle = surfboardGradient;
-                    ctx.beginPath();
-                    ctx.ellipse(obstacle.x, obstacle.y + 15, 25, 8, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Draw surfer
-                    ctx.fillStyle = '#FF6347';
-                    
-                    // Body
-                    ctx.fillRect(obstacle.x - 10, obstacle.y - 25, 20, 30);
-                    
-                    // Head
-                    ctx.beginPath();
-                    ctx.arc(obstacle.x, obstacle.y - 35, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Arms
-                    const armOffset = Math.sin(game.frameCount * 0.1) * 5;
-                    ctx.fillRect(obstacle.x - 25, obstacle.y - 20 + armOffset, 15, 8);
-                    ctx.fillRect(obstacle.x + 10, obstacle.y - 20 - armOffset, 15, 8);
-                    
-                    // Legs
-                    ctx.fillRect(obstacle.x - 8, obstacle.y + 5, 6, 20);
-                    ctx.fillRect(obstacle.x + 2, obstacle.y + 5, 6, 20);
-                    
-                    // Wave trail
-                    if (game.frameCount % 3 === 0) {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                        
-                        for (let i = 0; i < 2; i++) {
-                            const trailX = obstacle.x - 30 - i * 10;
-                            const trailY = waterHeight - 2 + Math.sin(game.frameCount * 0.2 + i) * 2;
-                            const size = 3 + Math.random() * 2;
-                            
-                            ctx.beginPath();
-                            ctx.arc(trailX, trailY, size, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                    }
-                }
-            });
-            
-            ctx.restore();
-        }
-        
-        // Draw player
-        function drawPlayer() {
-            ctx.save();
-            
-            const waterHeight = canvas.height * 0.7;
-            const surfboardType = game.player.surfboardType;
-            const surfboard = surfboardTypes[surfboardType] || surfboardTypes.standard;
-            
-            const surfboardWidth = surfboard.width;
-            const surfboardHeight = surfboard.height;
-            const surferWidth = 40;
-            const surferHeight = 60;
-            
-            // Find wave height at player position
-            let waveY = waterHeight;
-            let onSlope = false;
-            let slopeAngle = 0;
-            
-            // Check if player is on big wave
-            if (game.visuals.bigWave.active && 
-                game.player.x > game.visuals.bigWave.x - game.visuals.bigWave.width/2 && 
-                game.player.x < game.visuals.bigWave.x + game.visuals.bigWave.width/2) {
-                
-                // Calculate position on big wave
-                const relativeX = (game.player.x - (game.visuals.bigWave.x - game.visuals.bigWave.width/2)) / game.visuals.bigWave.width;
-                
-                if (relativeX < 0.5) {
-                    // First half of wave (rising)
-                    const waveProgress = relativeX * 2; // 0 to 1
-                    waveY = waterHeight - waveProgress * game.visuals.bigWave.height;
-                    onSlope = true;
-                    slopeAngle = -Math.PI/6; // 30 degrees upward
-                } else {
-                    // Second half of wave (falling)
-                    const waveProgress = (relativeX - 0.5) * 2; // 0 to 1
-                    waveY = waterHeight - (1 - waveProgress) * game.visuals.bigWave.height;
-                    onSlope = true;
-                    slopeAngle = Math.PI/6; // 30 degrees downward
-                }
-            } else {
-                // Check against regular wave
-                for (const point of game.wave) {
-                    const pointX = point.x * (canvas.width / 200);
-                    if (Math.abs(pointX - game.player.x) < 10) {
-                        waveY = waterHeight - (point.y * 5);
-                        break;
-                    }
-                }
-            }
-            
-            // Draw player with appropriate state
             if (game.player.onWave) {
                 if (game.player.jumping) {
                     // Draw jumping player
-                    const jumpY = waveY - surfboardHeight - game.player.y;
-                    
-                    // Check if performing trick
-                    if (game.player.performingTrick) {
-                        const trickType = game.player.currentTrick ? 
-                            (game.player.currentTrick.name.toLowerCase().includes('spin') ? 'spin' : 
-                             game.player.currentTrick.name.toLowerCase().includes('flip') ? 'flip' : 
-                             game.player.currentTrick.name.toLowerCase().includes('grab') ? 'grab' : null) : null;
-                        
-                        // Draw rotating surfboard
-                        ctx.save();
-                        ctx.translate(game.player.x, jumpY);
-                        ctx.rotate(game.player.trickRotation);
-                        ctx.drawImage(
-                            createSurfboard(surfboardWidth, surfboardHeight, surfboardType), 
-                            -surfboardWidth/2, 
-                            -surfboardHeight/2
-                        );
-                        ctx.restore();
-                        
-                        // Draw surfer in trick pose
-                        ctx.save();
-                        ctx.translate(game.player.x, jumpY - surferHeight/2);
-                        ctx.rotate(game.player.trickRotation);
-                        ctx.drawImage(
-                            createSurfer(surferWidth, surferHeight, 'trick', 0, trickType), 
-                            -surferWidth/2 - surferWidth * 0.25, 
-                            -surferHeight/2 - surferHeight * 0.25
-                        );
-                        ctx.restore();
-                        
-                        // Add motion blur effect for tricks
-                        ctx.globalAlpha = 0.3;
-                        ctx.strokeStyle = 'white';
-                        ctx.lineWidth = 2;
-                        
-                        // Motion trails
-                        for (let i = 1; i <= 5; i++) {
-                            const trailRotation = game.player.trickRotation * (i / 5);
-                            
-                            ctx.save();
-                            ctx.translate(game.player.x, jumpY);
-                            ctx.rotate(trailRotation);
-                            ctx.beginPath();
-                            ctx.rect(-surfboardWidth/2, -surfboardHeight/2, surfboardWidth, surfboardHeight);
-                            ctx.stroke();
-                            ctx.restore();
-                        }
-                        
-                        ctx.globalAlpha = 1;
-                    } else {
-                        // Regular jump (no trick)
-                        // Draw surfboard with animation
-                        if (game.frameCount % 10 < 5) {
-                            // Animate surfboard tilting in air
-                            ctx.save();
-                            ctx.translate(game.player.x, jumpY);
-                            ctx.rotate(Math.PI * 0.05);
-                            ctx.drawImage(
-                                createSurfboard(surfboardWidth, surfboardHeight, surfboardType), 
-                                -surfboardWidth/2, 
-                                -surfboardHeight/2
-                            );
-                            ctx.restore();
-                        } else {
-                            ctx.save();
-                            ctx.translate(game.player.x, jumpY);
-                            ctx.rotate(-Math.PI * 0.05);
-                            ctx.drawImage(
-                                createSurfboard(surfboardWidth, surfboardHeight, surfboardType), 
-                                -surfboardWidth/2, 
-                                -surfboardHeight/2
-                            );
-                            ctx.restore();
-                        }
-                        
-                        // Draw surfer in jump pose
-                        ctx.drawImage(
-                            createSurfer(surferWidth, surferHeight, 'jumping'), 
-                            game.player.x - surferWidth/2, 
-                            jumpY - surferHeight
-                        );
-                    }
-                    
-                    // Show trajectory path
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                    ctx.setLineDash([5, 5]);
-                    ctx.beginPath();
-                    ctx.moveTo(game.player.x, waveY - surfboardHeight);
-                    ctx.quadraticCurveTo(
-                        game.player.x, waveY - surfboardHeight - game.player.y/2,
-                        game.player.x, jumpY
-                    );
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                } else {
-                    // Draw riding player with tilt
-                    ctx.translate(game.player.x, waveY - surfboardHeight/2);
-                    
-                    if (onSlope) {
-                        // On big wave slope
-                        ctx.rotate(slopeAngle + game.player.balance * 0.2);
-                    } else {
-                        // Normal balance tilt
-                        ctx.rotate(game.player.balance * 0.3);
-                    }
+                    const jumpY = waterHeight - surfboardHeight - game.player.y;
                     
                     // Draw surfboard
-                    ctx.drawImage(
-                        createSurfboard(surfboardWidth, surfboardHeight, surfboardType), 
-                        -surfboardWidth/2, 
-                        -surfboardHeight/2
-                    );
+                    ctx.save();
+                    ctx.translate(game.player.x, jumpY);
+                    ctx.rotate(Math.sin(game.frameCount * 0.1) * 0.1);
                     
-                    // Draw surfer
-                    ctx.drawImage(
-                        createSurfer(surferWidth, surferHeight, 'standing'), 
-                        -surferWidth/2, 
-                        -surfboardHeight/2 - surferHeight
-                    );
+                    // Surfboard
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, surfboardWidth/2, surfboardHeight/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Surfboard stripe
+                    ctx.strokeStyle = '#4682B4';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-surfboardWidth/4, 0);
+                    ctx.lineTo(surfboardWidth/4, 0);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                    
+                    // Draw surfer (simplified)
+                    ctx.fillStyle = '#FF6347';
+                    ctx.fillRect(game.player.x - 10, jumpY - 40, 20, 30); // Body
+                    ctx.beginPath();
+                    ctx.arc(game.player.x, jumpY - 50, 10, 0, Math.PI * 2); // Head
+                    ctx.fill();
+                    
+                    // Draw arms and legs in jumping pose
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = '#FF6347';
+                    
+                    // Arms
+                    ctx.beginPath();
+                    ctx.moveTo(game.player.x, jumpY - 30);
+                    ctx.lineTo(game.player.x - 15, jumpY - 40);
+                    ctx.moveTo(game.player.x, jumpY - 30);
+                    ctx.lineTo(game.player.x + 15, jumpY - 40);
+                    ctx.stroke();
+                    
+                    // Legs
+                    ctx.beginPath();
+                    ctx.moveTo(game.player.x - 5, jumpY - 10);
+                    ctx.lineTo(game.player.x - 10, jumpY + 5);
+                    ctx.moveTo(game.player.x + 5, jumpY - 10);
+                    ctx.lineTo(game.player.x + 10, jumpY + 5);
+                    ctx.stroke();
+                } else {
+                    // Draw riding player with tilt based on balance
+                    ctx.save();
+                    ctx.translate(game.player.x, waterHeight - surfboardHeight/2);
+                    ctx.rotate(game.player.balance * 0.3);
+                    
+                    // Surfboard
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, surfboardWidth/2, surfboardHeight/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Surfboard stripe
+                    ctx.strokeStyle = '#4682B4';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-surfboardWidth/4, 0);
+                    ctx.lineTo(surfboardWidth/4, 0);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                    
+                    // Draw surfer (simplified)
+                    ctx.save();
+                    ctx.translate(game.player.x, waterHeight - surfboardHeight);
+                    ctx.rotate(game.player.balance * 0.3);
+                    
+                    ctx.fillStyle = '#FF6347';
+                    ctx.fillRect(-10, -40, 20, 30); // Body
+                    ctx.beginPath();
+                    ctx.arc(0, -50, 10, 0, Math.PI * 2); // Head
+                    ctx.fill();
+                    
+                    // Draw arms and legs in surfing pose
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = '#FF6347';
+                    
+                    // Arms
+                    ctx.beginPath();
+                    ctx.moveTo(0, -30);
+                    ctx.lineTo(-20, -25);
+                    ctx.moveTo(0, -30);
+                    ctx.lineTo(20, -25);
+                    ctx.stroke();
+                    
+                    // Legs
+                    ctx.beginPath();
+                    ctx.moveTo(-5, -10);
+                    ctx.lineTo(-10, 0);
+                    ctx.moveTo(5, -10);
+                    ctx.lineTo(10, 0);
+                    ctx.stroke();
+                    
+                    ctx.restore();
                     
                     // Draw surfing trail
                     if (game.frameCount % 3 === 0) {
-                        createWaterParticle(
-                            game.player.x, 
-                            waveY, 
-                            -2 + game.player.balance * 2, 
+                        createParticle(
+                            game.player.x - 20,
+                            waterHeight,
+                            -1 + game.player.balance,
                             0
-                        );
-                    }
-                }
-            } else if (game.player.animation.catchingWave) {
-                // Catching wave animation
-                const catchProgress = game.player.animation.catchProgress;
-                
-                // Determine position (moving toward wave)
-                let bigWaveX = canvas.width + 100;
-                if (game.visuals.bigWave.active) {
-                    bigWaveX = game.visuals.bigWave.x;
-                }
-                
-                const moveX = game.player.x + (bigWaveX - game.player.x) * Math.min(0.3, catchProgress * 0.5);
-                
-                // Draw surfboard tilting up to catch wave
-                ctx.save();
-                ctx.translate(moveX, waterHeight - 10);
-                ctx.rotate(-Math.PI * 0.1 * catchProgress);
-                ctx.drawImage(
-                    createSurfboard(surfboardWidth, surfboardHeight, surfboardType), 
-                    -surfboardWidth/2, 
-                    -surfboardHeight/2
-                );
-                ctx.restore();
-                
-                // Draw surfer transitioning from paddling to standing
-                if (catchProgress < 0.5) {
-                    // Still paddling
-                    ctx.drawImage(
-                        createSurfer(surferWidth, surferHeight, 'paddling'), 
-                        moveX - surferWidth/2, 
-                        waterHeight - 25 - surferHeight/2
-                    );
-                } else {
-                    // Transitioning to standing
-                    ctx.save();
-                    ctx.translate(moveX, waterHeight - 25);
-                    const standingProgress = (catchProgress - 0.5) * 2; // 0 to 1
-                    ctx.rotate(-Math.PI * 0.2 * standingProgress);
-                    ctx.drawImage(
-                        createSurfer(surferWidth, surferHeight, 'standing'), 
-                        -surferWidth/2, 
-                        -surferHeight
-                    );
-                    ctx.restore();
-                }
-                
-                // Draw splash effects for wave catching
-                if (game.frameCount % 2 === 0) {
-                    for (let i = 0; i < 2; i++) {
-                        createWaterParticle(
-                            moveX + (Math.random() * 30 - 15), 
-                            waterHeight, 
-                            Math.random() * 2 - 1, 
-                            -Math.random() * 3
                         );
                     }
                 }
             } else {
                 // Draw paddling player
-                // Draw surfboard
-                ctx.drawImage(
-                    createSurfboard(surfboardWidth, surfboardHeight, surfboardType), 
-                    game.player.x - surfboardWidth/2, 
-                    waterHeight - surfboardHeight
-                );
+                // Surfboard
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.ellipse(game.player.x, waterHeight - surfboardHeight/2, surfboardWidth/2, surfboardHeight/2, 0, 0, Math.PI * 2);
+                ctx.fill();
                 
-                // Draw surfer
-                ctx.drawImage(
-                    createSurfer(surferWidth, surferHeight, 'paddling'), 
-                    game.player.x - surferWidth/2, 
-                    waterHeight - 25 - surferHeight/2
-                );
+                // Surfboard stripe
+                ctx.strokeStyle = '#4682B4';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(game.player.x - surfboardWidth/4, waterHeight - surfboardHeight/2);
+                ctx.lineTo(game.player.x + surfboardWidth/4, waterHeight - surfboardHeight/2);
+                ctx.stroke();
+                
+                // Draw surfer in paddling pose
+                ctx.fillStyle = '#FF6347';
+                
+                // Paddling animation
+                const paddleOffset = game.keysPressed[' '] ? Math.sin(game.frameCount * 0.2) * 5 : 0;
+                
+                ctx.fillRect(game.player.x - 20, waterHeight - 30, 40, 15); // Body
+                ctx.beginPath();
+                ctx.arc(game.player.x + 15, waterHeight - 22, 10, 0, Math.PI * 2); // Head
+                ctx.fill();
+                
+                // Arms in paddling motion
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#FF6347';
+                ctx.beginPath();
+                ctx.moveTo(game.player.x - 10, waterHeight - 22);
+                ctx.lineTo(game.player.x - 30, waterHeight - 22 + paddleOffset);
+                ctx.stroke();
                 
                 // Draw paddle splash when paddling
-                if (game.keysPressed[' ']) {
-                    const splashX = game.player.x - 30;
-                    const splashY = waterHeight + Math.sin(game.frameCount * 0.5) * 3;
-                    
+                if (game.keysPressed[' '] && game.frameCount % 10 < 5) {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                     ctx.beginPath();
-                    ctx.arc(splashX, splashY, 5, 0, Math.PI * 2);
+                    ctx.arc(game.player.x - 30, waterHeight + paddleOffset, 3, 0, Math.PI * 2);
                     ctx.fill();
-                    
-                    // Add small splash particles
-                    if (game.frameCount % 5 === 0) {
-                        for (let i = 0; i < 3; i++) {
-                            createWaterParticle(
-                                splashX + (Math.random() * 10 - 5), 
-                                splashY, 
-                                Math.random() * 2 - 1, 
-                                -Math.random() * 2
-                            );
-                        }
-                    }
                 }
             }
             
-            ctx.restore();
+            // Draw UI
+            drawUI();
         }
         
         // Draw UI elements
         function drawUI() {
-            // Draw help text when appropriate
-            let helpText = '';
+            // Score and stats
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(10, 10, 200, 80);
             
-            if (!game.player.onWave && !game.player.animation.catchingWave) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.font = '16px Arial';
+            ctx.fillStyle = 'white';
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Score: ${game.score}`, 20, 30);
+            ctx.fillText(`Level: ${game.level}`, 20, 50);
+            ctx.fillText(`Wipeouts: ${game.wipeouts}`, 20, 70);
+            
+            // Paddle power bar
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(canvas.width - 210, 10, 200, 25);
+            
+            ctx.fillStyle = '#FFA500';
+            ctx.fillRect(canvas.width - 205, 15, game.player.paddlePower * 1.9, 15);
+            
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Paddle Power: ${Math.floor(game.player.paddlePower)}%`, canvas.width - 110, 28);
+            
+            // Balance indicator when on wave
+            if (game.player.onWave && !game.player.jumping) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(canvas.width / 2 - 100, 10, 200, 25);
+                
+                // Balance position (convert -1...1 to 0...190)
+                const balancePos = (game.player.balance + 1) * 95;
+                
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.rect(canvas.width / 2 - 100 + balancePos, 15, 10, 15);
+                ctx.fill();
+                
+                ctx.textAlign = 'center';
+                ctx.fillText('Balance', canvas.width / 2, 50);
+                
+                // Draw balance danger zones
+                if (Math.abs(game.player.balance) > 0.7) {
+                    ctx.fillStyle = 'rgba(255,0,0,0.5)';
+                    ctx.fillText('CAUTION: BALANCE!', canvas.width / 2, 70);
+                }
+            }
+            
+            // Help text
+            if (!game.player.onWave) {
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.font = '18px sans-serif';
                 ctx.textAlign = 'center';
                 
                 if (game.player.paddlePower < 50) {
-                    helpText = 'Press SPACE to paddle and build power!';
-                } else if (game.visuals.bigWave.active && 
-                          Math.abs(game.visuals.bigWave.x - game.player.x) < 150) {
-                    helpText = 'BIG WAVE COMING! Press UP ARROW to catch it!';
-                    
-                    // Highlight with pulsing effect
-                    const alpha = 0.5 + Math.sin(game.frameCount * 0.2) * 0.3;
-                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fillText('Press SPACE to paddle and build power!', canvas.width / 2, canvas.height - 50);
+                } else if (game.bigWave.active && Math.abs(game.bigWave.x - game.player.x) < 150) {
+                    ctx.fillStyle = 'rgba(255,255,255,' + (0.5 + Math.sin(game.frameCount * 0.1) * 0.3) + ')';
+                    ctx.fillText('BIG WAVE COMING! Press UP ARROW to catch it!', canvas.width / 2, canvas.height - 50);
                 } else {
-                    helpText = 'Press UP ARROW to catch a wave!';
+                    ctx.fillText('Press UP ARROW to catch a wave!', canvas.width / 2, canvas.height - 50);
                 }
-                
-                // Draw text with shadow for better visibility
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
-                ctx.fillText(helpText, canvas.width / 2, 150);
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
-            } else if (game.player.onWave && !game.player.jumping && game.player.trickPower >= 100) {
-                // Trick meter full notification
-                ctx.fillStyle = 'rgba(156, 39, 176, 0.8)';
-                ctx.font = '16px Arial';
+            } else if (game.player.onWave && !game.player.jumping) {
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.font = '18px sans-serif';
                 ctx.textAlign = 'center';
-                
-                const alpha = 0.5 + Math.sin(game.frameCount * 0.2) * 0.3;
-                ctx.fillStyle = `rgba(156, 39, 176, ${alpha})`;
-                
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
-                ctx.fillText('PRESS G FOR SPECIAL TRICK!', canvas.width / 2, 150);
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
-            }
-            
-            // Draw trick power indicator when jumping
-            if (game.player.jumping && !game.player.performingTrick) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                ctx.font = '14px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('PRESS F FOR TRICK!', game.player.x, canvas.height * 0.7 - game.player.y - 70);
+                ctx.fillText('Press SPACE to jump! Use LEFT/RIGHT to balance!', canvas.width / 2, canvas.height - 50);
             }
         }
         
-        // Event listeners for tutorial buttons
-        window.nextTutorialStep = nextTutorialStep;
-        window.prevTutorialStep = prevTutorialStep;
-        window.closeTutorial = closeTutorial;
+        // Game loop
+        function gameLoop() {
+            if (!game.paused) {
+                update();
+                draw();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Handle keyboard input
+        document.addEventListener('keydown', function(event) {
+            game.keysPressed[event.key] = true;
+            
+            // Prevent default for game keys
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)) {
+                event.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', function(event) {
+            game.keysPressed[event.key] = false;
+        });
+        
+        // Initialize game
+        function init() {
+            generateWave();
+            createBigWave();
+            gameLoop();
+        }
+        
+        // Start game
+        init();
     </script>
 </body>
 </html>
