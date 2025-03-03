@@ -545,43 +545,22 @@
         const tutorialBtn = document.getElementById('tutorial-btn');
         const tutorialOverlay = document.getElementById('tutorial-overlay');
         
-        // Preload images
+        // Container for drawn graphics
         const images = {};
-        const imagesToLoad = [
-            { name: 'cloud', src: '/api/placeholder/100/60' },
-            { name: 'island', src: '/api/placeholder/200/100' },
-            { name: 'shell', src: '/api/placeholder/30/30' },
-            { name: 'rock', src: '/api/placeholder/50/40' },
-            { name: 'powerupSpeed', src: '/api/placeholder/40/40' },
-            { name: 'powerupBalance', src: '/api/placeholder/40/40' },
-            { name: 'powerupTrick', src: '/api/placeholder/40/40' },
-            { name: 'fish', src: '/api/placeholder/40/20' },
-            { name: 'bird', src: '/api/placeholder/30/20' }
-        ];
         
-        let imagesLoaded = 0;
-        imagesToLoad.forEach(img => {
-            images[img.name] = new Image();
-            images[img.name].onload = () => {
-                imagesLoaded++;
-                if (imagesLoaded === imagesToLoad.length) {
-                    // All images loaded, start the game
-                    initGame();
-                }
-            };
-            images[img.name].src = img.src;
-        });
+        // Initialize game directly without waiting for image loading
+        initGame();
         
-        // Audio elements
+        // Audio elements (configured as dummy objects to prevent errors)
         const audio = {
-            wave: new Audio(),
-            splash: new Audio(),
-            collect: new Audio(),
-            trick: new Audio(),
-            wipeout: new Audio(),
-            levelUp: new Audio(),
-            powerup: new Audio(),
-            music: new Audio()
+            wave: { play: function() { console.log("Playing wave sound"); } },
+            splash: { play: function() { console.log("Playing splash sound"); } },
+            collect: { play: function() { console.log("Playing collect sound"); } },
+            trick: { play: function() { console.log("Playing trick sound"); } },
+            wipeout: { play: function() { console.log("Playing wipeout sound"); } },
+            levelUp: { play: function() { console.log("Playing levelUp sound"); } },
+            powerup: { play: function() { console.log("Playing powerup sound"); } },
+            music: { play: function() { console.log("Playing music"); } }
         };
         
         // Game state
@@ -1316,9 +1295,14 @@
         
         // Play sound
         function playSound(soundName) {
-            // In a real implementation, this would play actual sounds
-            // For this prototype, we'll just log it
-            console.log(`Playing sound: ${soundName}`);
+            // Play sound if it exists in our audio object
+            if (audio[soundName]) {
+                try {
+                    audio[soundName].play();
+                } catch (e) {
+                    console.log(`Playing sound: ${soundName}`);
+                }
+            }
         }
         
         // Toggle pause menu
@@ -3121,7 +3105,15 @@
                     const waterHeight = canvas.height * 0.7;
                     
                     // Draw surfboard
-                    ctx.fillStyle = '#FFD700';
+                    const surfboardGradient = ctx.createLinearGradient(
+                        obstacle.x - 25, obstacle.y + 15,
+                        obstacle.x + 25, obstacle.y + 15
+                    );
+                    surfboardGradient.addColorStop(0, '#FFD700');
+                    surfboardGradient.addColorStop(0.5, '#FFFFFF');
+                    surfboardGradient.addColorStop(1, '#FFD700');
+                    
+                    ctx.fillStyle = surfboardGradient;
                     ctx.beginPath();
                     ctx.ellipse(obstacle.x, obstacle.y + 15, 25, 8, 0, 0, Math.PI * 2);
                     ctx.fill();
