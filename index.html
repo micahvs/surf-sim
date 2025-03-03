@@ -1,729 +1,518 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Surf Simulator</title>
+    <title>Minimal Surf Game</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #1E90FF, #87CEEB);
-            font-family: sans-serif;
+            background: #1E90FF;
+            font-family: Arial, sans-serif;
             color: white;
-            min-height: 100vh;
-            overflow-x: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
             flex-direction: column;
         }
         
-        .game-container {
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
-        }
-        
-        canvas {
-            display: block;
-            margin: 0 auto;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        #gameCanvas {
             background: #87CEEB;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         
         .controls {
-            text-align: center;
-            margin-top: 15px;
-            padding: 10px;
+            margin-top: 20px;
             background: rgba(0,0,0,0.2);
-            border-radius: 10px;
-        }
-        
-        h1 {
-            text-align: center;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
-    <h1>Surf Simulator</h1>
-    <div class="game-container">
-        <canvas id="gameCanvas" width="800" height="500"></canvas>
-    </div>
+    <h1>Minimal Surf Game</h1>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
     <div class="controls">
-        <strong>Controls:</strong> SPACE to paddle/jump, LEFT/RIGHT to balance, UP to catch wave
+        <strong>Controls:</strong> SPACE to paddle/jump, UP to catch wave, LEFT/RIGHT to balance
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Game state
-        const game = {
-            active: true,
-            paused: false,
-            frameCount: 0,
-            score: 0,
-            level: 1,
-            wipeouts: 0,
-            player: {
-                x: canvas.width / 4,
-                y: 0,
-                width: 50,
-                height: 40,
-                paddlePower: 0,
-                onWave: false,
-                jumping: false,
-                jumpVelocity: 0,
-                balance: 0
-            },
-            wave: [],
-            particles: [],
-            keysPressed: {},
-            bigWave: {
-                active: false,
-                x: -100,
-                height: 60,
-                width: 300,
-                speed: 2
+        // Wait for the DOM to be fully loaded before accessing elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get canvas element
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Game constants
+            const WATER_HEIGHT = canvas.height * 0.7;
+            
+            // Game state
+            const game = {
+                active: true,
+                paused: false,
+                frameCount: 0,
+                score: 0,
+                level: 1,
+                wipeouts: 0,
+                player: {
+                    x: canvas.width / 4,
+                    y: 0,
+                    paddlePower: 0,
+                    onWave: false,
+                    jumping: false,
+                    jumpVelocity: 0,
+                    balance: 0
+                },
+                wave: [],
+                particles: [],
+                keysPressed: {},
+                bigWave: {
+                    active: false,
+                    x: -100,
+                    height: 40,
+                    width: 200,
+                    speed: 2
+                }
+            };
+            
+            // Generate wave points
+            function generateWave() {
+                game.wave = [];
+                for (let x = 0; x < canvas.width; x += 5) {
+                    game.wave.push({
+                        x: x,
+                        y: 5 * Math.sin(x * 0.01) + 2 * Math.sin(x * 0.02) + Math.random()
+                    });
+                }
             }
-        };
-        
-        // Generate wave points
-        function generateWave() {
-            game.wave = [];
-            for (let x = 0; x < canvas.width; x += 5) {
-                game.wave.push({
+            
+            // Create big surfable wave
+            function createBigWave() {
+                game.bigWave.active = true;
+                game.bigWave.x = -100;
+                game.bigWave.height = 40 + game.level * 5;
+            }
+            
+            // Create a particle
+            function createParticle(x, y) {
+                game.particles.push({
                     x: x,
-                    y: 5 * Math.sin(x * 0.01) + 2 * Math.sin(x * 0.02) + Math.random() * 2
+                    y: y,
+                    vx: Math.random() * 2 - 1,
+                    vy: -Math.random() * 2,
+                    size: Math.random() * 3 + 1,
+                    life: 30
                 });
             }
-        }
-        
-        // Create big surfable wave
-        function createBigWave() {
-            game.bigWave.active = true;
-            game.bigWave.x = -100;
-            game.bigWave.height = 60 + game.level * 5;
-            game.bigWave.width = 300;
             
-            // Display message
-            displayMessage("Big wave coming! Get ready!");
-        }
-        
-        // Display a message
-        function displayMessage(text, duration = 2000) {
-            ctx.save();
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.fillRect(canvas.width/2 - 150, canvas.height/2 - 25, 300, 50);
-            ctx.fillStyle = 'white';
-            ctx.font = '18px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, canvas.width/2, canvas.height/2);
-            ctx.restore();
-            
-            // In a real game, we'd set a timer to clear this message
-        }
-        
-        // Create a water splash particle
-        function createParticle(x, y, vx, vy) {
-            game.particles.push({
-                x: x,
-                y: y,
-                vx: vx,
-                vy: vy,
-                size: Math.random() * 3 + 1,
-                life: 30 + Math.random() * 20,
-                alpha: 1
-            });
-        }
-        
-        // Handle wipeout
-        function handleWipeout() {
-            game.player.onWave = false;
-            game.player.balance = 0;
-            game.player.paddlePower = 0;
-            game.wipeouts++;
-            
-            // Create splash effect
-            for (let i = 0; i < 20; i++) {
-                createParticle(
-                    game.player.x + (Math.random() * 40 - 20),
-                    canvas.height * 0.7,
-                    Math.random() * 6 - 3,
-                    -Math.random() * 6
-                );
-            }
-            
-            displayMessage("Wipeout! Paddle again to catch a wave.");
-        }
-        
-        // Update game state
-        function update() {
-            game.frameCount++;
-            
-            // Periodically create big surfable waves
-            if (game.frameCount % 300 === 0 && !game.bigWave.active && !game.player.onWave) {
-                createBigWave();
-            }
-            
-            // Update big wave if active
-            if (game.bigWave.active) {
-                game.bigWave.x += game.bigWave.speed;
+            // Handle wipeout
+            function handleWipeout() {
+                game.player.onWave = false;
+                game.player.paddlePower = 0;
+                game.player.balance = 0;
+                game.wipeouts++;
                 
-                // Check if wave is in catching position
-                if (game.bigWave.x > game.player.x - 50 && 
-                    game.bigWave.x < game.player.x + 50 &&
-                    game.player.paddlePower > 50 &&
-                    game.keysPressed['ArrowUp']) {
+                // Create splash effect
+                for (let i = 0; i < 10; i++) {
+                    createParticle(game.player.x, WATER_HEIGHT);
+                }
+            }
+            
+            // Update game state
+            function update() {
+                game.frameCount++;
+                
+                // Create big wave occasionally
+                if (game.frameCount % 300 === 0 && !game.bigWave.active && !game.player.onWave) {
+                    createBigWave();
+                }
+                
+                // Update big wave position
+                if (game.bigWave.active) {
+                    game.bigWave.x += game.bigWave.speed;
                     
-                    game.player.onWave = true;
-                    displayMessage("You caught the wave!");
+                    // Check if player can catch wave
+                    if (game.player.paddlePower > 50 && 
+                        Math.abs(game.bigWave.x - game.player.x) < 50 && 
+                        game.keysPressed['ArrowUp']) {
+                        
+                        game.player.onWave = true;
+                        game.score += 100;
+                        
+                        // Create splash effect
+                        for (let i = 0; i < 5; i++) {
+                            createParticle(game.player.x, WATER_HEIGHT);
+                        }
+                    }
                     
-                    // Create splash effect
-                    for (let i = 0; i < 15; i++) {
-                        createParticle(
-                            game.player.x + (Math.random() * 40 - 20),
-                            canvas.height * 0.7,
-                            Math.random() * 4 - 2,
-                            -Math.random() * 4
-                        );
+                    // Remove wave when it's off screen
+                    if (game.bigWave.x > canvas.width + 100) {
+                        game.bigWave.active = false;
+                    }
+                }
+                
+                // Handle paddling
+                if (game.keysPressed[' '] && !game.player.onWave) {
+                    game.player.paddlePower = Math.min(100, game.player.paddlePower + 1);
+                    
+                    // Create paddle splash
+                    if (game.frameCount % 10 === 0) {
+                        createParticle(game.player.x - 20, WATER_HEIGHT);
+                    }
+                } else if (!game.player.onWave) {
+                    game.player.paddlePower = Math.max(0, game.player.paddlePower - 0.5);
+                }
+                
+                // Handle jumping
+                if (game.keysPressed[' '] && game.player.onWave && !game.player.jumping) {
+                    game.player.jumping = true;
+                    game.player.jumpVelocity = 10;
+                    
+                    // Create jump splash
+                    for (let i = 0; i < 5; i++) {
+                        createParticle(game.player.x, WATER_HEIGHT);
+                    }
+                }
+                
+                // Update jump
+                if (game.player.jumping) {
+                    game.player.jumpVelocity -= 0.5; // Gravity
+                    game.player.y += game.player.jumpVelocity;
+                    
+                    // Land back on wave
+                    if (game.player.y <= 0) {
+                        game.player.y = 0;
+                        game.player.jumping = false;
+                        game.score += 20;
+                    }
+                }
+                
+                // Handle balance when on wave
+                if (game.player.onWave && !game.player.jumping) {
+                    if (game.keysPressed['ArrowLeft']) {
+                        game.player.balance = Math.max(-1, game.player.balance - 0.02);
+                    }
+                    if (game.keysPressed['ArrowRight']) {
+                        game.player.balance = Math.min(1, game.player.balance + 0.02);
+                    }
+                    
+                    // Natural balance recovery
+                    if (!game.keysPressed['ArrowLeft'] && !game.keysPressed['ArrowRight']) {
+                        if (game.player.balance > 0) {
+                            game.player.balance -= 0.01;
+                        } else if (game.player.balance < 0) {
+                            game.player.balance += 0.01;
+                        }
+                    }
+                    
+                    // Apply wave turbulence
+                    game.player.balance += (Math.random() - 0.5) * 0.01;
+                    
+                    // Check for wipeout
+                    if (Math.abs(game.player.balance) > 0.9 && Math.random() < 0.03) {
+                        handleWipeout();
                     }
                     
                     // Add score
-                    game.score += 100;
-                }
-                
-                // Remove wave when it leaves screen
-                if (game.bigWave.x > canvas.width + 100) {
-                    game.bigWave.active = false;
-                }
-            }
-            
-            // Handle paddling
-            if (game.keysPressed[' '] && !game.player.onWave) {
-                game.player.paddlePower = Math.min(100, game.player.paddlePower + 2);
-                
-                // Create paddle splash sometimes
-                if (game.frameCount % 5 === 0) {
-                    createParticle(
-                        game.player.x - 20,
-                        canvas.height * 0.7,
-                        -Math.random(),
-                        -Math.random()
-                    );
-                }
-            } else if (!game.player.onWave) {
-                // Paddle power decay
-                game.player.paddlePower = Math.max(0, game.player.paddlePower - 0.5);
-            }
-            
-            // Handle jumping
-            if (game.keysPressed[' '] && game.player.onWave && !game.player.jumping) {
-                game.player.jumping = true;
-                game.player.jumpVelocity = 10;
-                
-                // Create jump splash
-                for (let i = 0; i < 10; i++) {
-                    createParticle(
-                        game.player.x,
-                        canvas.height * 0.7,
-                        Math.random() * 4 - 2,
-                        -Math.random() * 4
-                    );
-                }
-            }
-            
-            // Update jump
-            if (game.player.jumping) {
-                game.player.jumpVelocity -= 0.5; // Gravity
-                game.player.y += game.player.jumpVelocity;
-                
-                // Land back on wave
-                if (game.player.y <= 0) {
-                    game.player.y = 0;
-                    game.player.jumping = false;
-                    
-                    // Add points for jump
-                    game.score += 20;
-                    
-                    // Create landing splash
-                    for (let i = 0; i < 10; i++) {
-                        createParticle(
-                            game.player.x + (Math.random() * 40 - 20),
-                            canvas.height * 0.7,
-                            Math.random() * 3 - 1.5,
-                            -Math.random() * 2
-                        );
-                    }
-                }
-            }
-            
-            // Handle balance when on wave
-            if (game.player.onWave && !game.player.jumping) {
-                const balanceRate = 0.03 * (1 + game.level * 0.1);
-                const recoveryRate = 0.01;
-                
-                if (game.keysPressed['ArrowLeft']) {
-                    game.player.balance = Math.max(-1, game.player.balance - balanceRate);
-                }
-                if (game.keysPressed['ArrowRight']) {
-                    game.player.balance = Math.min(1, game.player.balance + balanceRate);
-                }
-                
-                // Natural balance recovery
-                if (!game.keysPressed['ArrowLeft'] && !game.keysPressed['ArrowRight']) {
-                    if (game.player.balance > 0) {
-                        game.player.balance = Math.max(0, game.player.balance - recoveryRate);
-                    } else if (game.player.balance < 0) {
-                        game.player.balance = Math.min(0, game.player.balance + recoveryRate);
+                    if (game.frameCount % 10 === 0) {
+                        game.score += game.level;
                     }
                 }
                 
-                // Apply wave turbulence to balance
-                game.player.balance += (Math.random() - 0.5) * 0.02;
-                
-                // Check for wipeout
-                if (Math.abs(game.player.balance) > 0.8 && Math.random() < 0.05) {
-                    handleWipeout();
+                // Level up if enough score
+                if (game.score > game.level * 1000 && game.player.onWave) {
+                    game.level++;
+                    game.score += 200;
+                    
+                    // Reset player
+                    game.player.onWave = false;
+                    game.player.paddlePower = 0;
                 }
                 
-                // Add score when riding wave
-                if (game.frameCount % 10 === 0) {
-                    game.score += game.level;
+                // Update particles
+                for (let i = game.particles.length - 1; i >= 0; i--) {
+                    const particle = game.particles[i];
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.life--;
+                    
+                    // Remove dead particles
+                    if (particle.life <= 0) {
+                        game.particles.splice(i, 1);
+                    }
+                }
+                
+                // Update wave
+                for (let i = 0; i < game.wave.length; i++) {
+                    game.wave[i].x -= 2;
+                    game.wave[i].y += Math.sin(game.frameCount * 0.05) * 0.05;
+                }
+                
+                // Remove off-screen wave points
+                game.wave = game.wave.filter(p => p.x > -10);
+                
+                // Add new wave points
+                if (game.wave.length > 0 && game.wave[game.wave.length - 1].x < canvas.width) {
+                    const lastPoint = game.wave[game.wave.length - 1];
+                    const newX = lastPoint.x + 5;
+                    const newY = 5 * Math.sin(newX * 0.01) + 2 * Math.sin(newX * 0.02) + Math.random();
+                    
+                    game.wave.push({ x: newX, y: newY });
                 }
             }
             
-            // Update water particles
-            for (let i = game.particles.length - 1; i >= 0; i--) {
-                const particle = game.particles[i];
+            // Draw game
+            function draw() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
-                // Move particle
-                particle.x += particle.vx;
-                particle.y += particle.vy;
-                particle.vy += 0.1; // Gravity
-                particle.life--;
-                particle.alpha = particle.life / 50;
+                // Draw sky
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, canvas.width, WATER_HEIGHT);
                 
-                // Remove dead particles
-                if (particle.life <= 0) {
-                    game.particles.splice(i, 1);
-                }
-            }
-            
-            // Move wave points
-            for (let i = 0; i < game.wave.length; i++) {
-                game.wave[i].x -= 2;
-                
-                // Add subtle wave animation
-                if (i % 5 === 0) {
-                    game.wave[i].y += Math.sin(game.frameCount * 0.05 + i * 0.1) * 0.05;
-                }
-            }
-            
-            // Remove off-screen wave points
-            game.wave = game.wave.filter(p => p.x > -5);
-            
-            // Add new wave points
-            while (game.wave.length > 0 && game.wave[game.wave.length - 1].x < canvas.width) {
-                const lastPoint = game.wave[game.wave.length - 1];
-                const newX = lastPoint.x + 5;
-                const newY = 5 * Math.sin(newX * 0.01) + 
-                          2 * Math.sin(newX * 0.02) + 
-                          Math.random() * 2;
-                          
-                game.wave.push({ x: newX, y: newY });
-            }
-            
-            // Level up if score reaches threshold
-            if (game.score > game.level * 1000 && game.player.onWave) {
-                game.level++;
-                displayMessage(`Level ${game.level}! Waves are getting bigger!`);
-                
-                // Reset player
-                game.player.onWave = false;
-                game.player.paddlePower = 0;
-                
-                // Add bonus points
-                game.score += 500;
-            }
-        }
-        
-        // Draw game
-        function draw() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw sky
-            ctx.fillStyle = '#87CEEB';
-            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.7);
-            
-            // Draw sun
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 20, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw water base
-            const waterHeight = canvas.height * 0.7;
-            ctx.fillStyle = '#4682B4';
-            ctx.fillRect(0, waterHeight, canvas.width, canvas.height - waterHeight);
-            
-            // Draw wave
-            if (game.wave.length > 0) {
+                // Draw sun
+                ctx.fillStyle = '#FFD700';
                 ctx.beginPath();
-                ctx.moveTo(0, waterHeight);
-                
-                for (const point of game.wave) {
-                    const y = waterHeight - (point.y * 5);
-                    ctx.lineTo(point.x, y);
-                }
-                
-                ctx.lineTo(canvas.width, waterHeight);
-                ctx.lineTo(canvas.width, canvas.height);
-                ctx.lineTo(0, canvas.height);
-                ctx.closePath();
-                
-                ctx.fillStyle = '#4682B4';
+                ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 20, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Draw wave foam
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
+                // Draw water
+                ctx.fillStyle = '#4682B4';
+                ctx.fillRect(0, WATER_HEIGHT, canvas.width, canvas.height - WATER_HEIGHT);
                 
-                for (const point of game.wave) {
-                    const y = waterHeight - (point.y * 5);
-                    if (point === game.wave[0]) {
-                        ctx.moveTo(point.x, y);
-                    } else {
+                // Draw wave
+                if (game.wave.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, WATER_HEIGHT);
+                    
+                    for (const point of game.wave) {
+                        const y = WATER_HEIGHT - (point.y * 5);
                         ctx.lineTo(point.x, y);
                     }
+                    
+                    ctx.lineTo(canvas.width, WATER_HEIGHT);
+                    ctx.lineTo(canvas.width, canvas.height);
+                    ctx.lineTo(0, canvas.height);
+                    ctx.closePath();
+                    
+                    ctx.fillStyle = '#4682B4';
+                    ctx.fill();
+                    
+                    // Draw wave foam
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    
+                    for (const point of game.wave) {
+                        const y = WATER_HEIGHT - (point.y * 5);
+                        if (point === game.wave[0]) {
+                            ctx.moveTo(point.x, y);
+                        } else {
+                            ctx.lineTo(point.x, y);
+                        }
+                    }
+                    
+                    ctx.stroke();
                 }
                 
-                ctx.stroke();
-            }
-            
-            // Draw big wave if active
-            if (game.bigWave.active) {
-                const waveX = game.bigWave.x;
-                const waveWidth = game.bigWave.width;
-                const waveHeight = game.bigWave.height;
-                
-                ctx.fillStyle = '#87CEFA';
-                
-                // Draw wave curve
-                ctx.beginPath();
-                ctx.moveTo(waveX - waveWidth/2, waterHeight);
-                
-                // Draw curve
-                ctx.bezierCurveTo(
-                    waveX - waveWidth/3, waterHeight,
-                    waveX - waveWidth/6, waterHeight - waveHeight,
-                    waveX, waterHeight - waveHeight
-                );
-                
-                ctx.bezierCurveTo(
-                    waveX + waveWidth/6, waterHeight - waveHeight * 0.6,
-                    waveX + waveWidth/3, waterHeight - waveHeight * 0.3,
-                    waveX + waveWidth/2, waterHeight
-                );
-                
-                ctx.closePath();
-                ctx.fill();
-                
-                // Draw foam at wave crest
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(waveX - waveWidth/6, waterHeight - waveHeight * 0.9);
-                ctx.quadraticCurveTo(
-                    waveX, waterHeight - waveHeight * 1.1,
-                    waveX + waveWidth/6, waterHeight - waveHeight * 0.9
-                );
-                ctx.stroke();
-            }
-            
-            // Draw water particles
-            for (const particle of game.particles) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
-                ctx.beginPath();
-                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            
-            // Draw player
-            const surfboardWidth = 50;
-            const surfboardHeight = 10;
-            
-            if (game.player.onWave) {
-                if (game.player.jumping) {
-                    // Draw jumping player
-                    const jumpY = waterHeight - surfboardHeight - game.player.y;
+                // Draw big wave if active
+                if (game.bigWave.active) {
+                    const waveX = game.bigWave.x;
+                    const waveWidth = game.bigWave.width;
+                    const waveHeight = game.bigWave.height;
                     
-                    // Draw surfboard
-                    ctx.save();
-                    ctx.translate(game.player.x, jumpY);
-                    ctx.rotate(Math.sin(game.frameCount * 0.1) * 0.1);
+                    ctx.fillStyle = '#87CEFA';
                     
-                    // Surfboard
-                    ctx.fillStyle = 'white';
+                    // Draw wave curve
                     ctx.beginPath();
-                    ctx.ellipse(0, 0, surfboardWidth/2, surfboardHeight/2, 0, 0, Math.PI * 2);
+                    ctx.moveTo(waveX - waveWidth/2, WATER_HEIGHT);
+                    ctx.quadraticCurveTo(
+                        waveX - waveWidth/4, WATER_HEIGHT - waveHeight,
+                        waveX, WATER_HEIGHT - waveHeight
+                    );
+                    ctx.quadraticCurveTo(
+                        waveX + waveWidth/4, WATER_HEIGHT - waveHeight/2,
+                        waveX + waveWidth/2, WATER_HEIGHT
+                    );
+                    ctx.closePath();
                     ctx.fill();
                     
-                    // Surfboard stripe
-                    ctx.strokeStyle = '#4682B4';
-                    ctx.lineWidth = 2;
+                    // Draw foam at wave crest
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.moveTo(-surfboardWidth/4, 0);
-                    ctx.lineTo(surfboardWidth/4, 0);
+                    ctx.moveTo(waveX - waveWidth/4, WATER_HEIGHT - waveHeight * 0.9);
+                    ctx.quadraticCurveTo(
+                        waveX, WATER_HEIGHT - waveHeight * 1.1,
+                        waveX + waveWidth/4, WATER_HEIGHT - waveHeight * 0.9
+                    );
                     ctx.stroke();
-                    
-                    ctx.restore();
-                    
-                    // Draw surfer (simplified)
-                    ctx.fillStyle = '#FF6347';
-                    ctx.fillRect(game.player.x - 10, jumpY - 40, 20, 30); // Body
+                }
+                
+                // Draw particles
+                for (const particle of game.particles) {
+                    const alpha = particle.life / 30;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                     ctx.beginPath();
-                    ctx.arc(game.player.x, jumpY - 50, 10, 0, Math.PI * 2); // Head
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
                     ctx.fill();
-                    
-                    // Draw arms and legs in jumping pose
-                    ctx.lineWidth = 4;
-                    ctx.strokeStyle = '#FF6347';
-                    
-                    // Arms
-                    ctx.beginPath();
-                    ctx.moveTo(game.player.x, jumpY - 30);
-                    ctx.lineTo(game.player.x - 15, jumpY - 40);
-                    ctx.moveTo(game.player.x, jumpY - 30);
-                    ctx.lineTo(game.player.x + 15, jumpY - 40);
-                    ctx.stroke();
-                    
-                    // Legs
-                    ctx.beginPath();
-                    ctx.moveTo(game.player.x - 5, jumpY - 10);
-                    ctx.lineTo(game.player.x - 10, jumpY + 5);
-                    ctx.moveTo(game.player.x + 5, jumpY - 10);
-                    ctx.lineTo(game.player.x + 10, jumpY + 5);
-                    ctx.stroke();
+                }
+                
+                // Draw player
+                if (game.player.onWave) {
+                    if (game.player.jumping) {
+                        // Draw jumping player
+                        const jumpY = WATER_HEIGHT - game.player.y;
+                        
+                        // Draw surfboard
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.ellipse(game.player.x, jumpY, 20, 5, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Draw surfer (simplified)
+                        ctx.fillStyle = '#FF6347';
+                        ctx.fillRect(game.player.x - 10, jumpY - 30, 20, 20); // Body
+                        ctx.beginPath();
+                        ctx.arc(game.player.x, jumpY - 40, 8, 0, Math.PI * 2); // Head
+                        ctx.fill();
+                    } else {
+                        // Draw surfing player with tilt based on balance
+                        const tilt = game.player.balance * 0.3;
+                        
+                        ctx.save();
+                        ctx.translate(game.player.x, WATER_HEIGHT);
+                        ctx.rotate(tilt);
+                        
+                        // Draw surfboard
+                        ctx.fillStyle = 'white';
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, 20, 5, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Draw surfer (simplified)
+                        ctx.fillStyle = '#FF6347';
+                        ctx.fillRect(-10, -30, 20, 20); // Body
+                        ctx.beginPath();
+                        ctx.arc(0, -40, 8, 0, Math.PI * 2); // Head
+                        ctx.fill();
+                        
+                        ctx.restore();
+                    }
                 } else {
-                    // Draw riding player with tilt based on balance
-                    ctx.save();
-                    ctx.translate(game.player.x, waterHeight - surfboardHeight/2);
-                    ctx.rotate(game.player.balance * 0.3);
-                    
-                    // Surfboard
+                    // Draw paddling player
+                    // Draw surfboard
                     ctx.fillStyle = 'white';
                     ctx.beginPath();
-                    ctx.ellipse(0, 0, surfboardWidth/2, surfboardHeight/2, 0, 0, Math.PI * 2);
+                    ctx.ellipse(game.player.x, WATER_HEIGHT, 20, 5, 0, 0, Math.PI * 2);
                     ctx.fill();
                     
-                    // Surfboard stripe
-                    ctx.strokeStyle = '#4682B4';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(-surfboardWidth/4, 0);
-                    ctx.lineTo(surfboardWidth/4, 0);
-                    ctx.stroke();
-                    
-                    ctx.restore();
-                    
-                    // Draw surfer (simplified)
-                    ctx.save();
-                    ctx.translate(game.player.x, waterHeight - surfboardHeight);
-                    ctx.rotate(game.player.balance * 0.3);
-                    
+                    // Draw surfer
                     ctx.fillStyle = '#FF6347';
-                    ctx.fillRect(-10, -40, 20, 30); // Body
+                    ctx.fillRect(game.player.x - 15, WATER_HEIGHT - 15, 30, 10); // Body
                     ctx.beginPath();
-                    ctx.arc(0, -50, 10, 0, Math.PI * 2); // Head
+                    ctx.arc(game.player.x + 15, WATER_HEIGHT - 10, 8, 0, Math.PI * 2); // Head
                     ctx.fill();
                     
-                    // Draw arms and legs in surfing pose
-                    ctx.lineWidth = 4;
-                    ctx.strokeStyle = '#FF6347';
-                    
-                    // Arms
-                    ctx.beginPath();
-                    ctx.moveTo(0, -30);
-                    ctx.lineTo(-20, -25);
-                    ctx.moveTo(0, -30);
-                    ctx.lineTo(20, -25);
-                    ctx.stroke();
-                    
-                    // Legs
-                    ctx.beginPath();
-                    ctx.moveTo(-5, -10);
-                    ctx.lineTo(-10, 0);
-                    ctx.moveTo(5, -10);
-                    ctx.lineTo(10, 0);
-                    ctx.stroke();
-                    
-                    ctx.restore();
-                    
-                    // Draw surfing trail
-                    if (game.frameCount % 3 === 0) {
-                        createParticle(
-                            game.player.x - 20,
-                            waterHeight,
-                            -1 + game.player.balance,
-                            0
-                        );
+                    // Paddle animation
+                    if (game.keysPressed[' ']) {
+                        const paddleOffset = Math.sin(game.frameCount * 0.2) * 5;
+                        ctx.fillRect(game.player.x - 25 - paddleOffset, WATER_HEIGHT - 5, 15, 5);
                     }
                 }
-            } else {
-                // Draw paddling player
-                // Surfboard
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.ellipse(game.player.x, waterHeight - surfboardHeight/2, surfboardWidth/2, surfboardHeight/2, 0, 0, Math.PI * 2);
-                ctx.fill();
                 
-                // Surfboard stripe
-                ctx.strokeStyle = '#4682B4';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(game.player.x - surfboardWidth/4, waterHeight - surfboardHeight/2);
-                ctx.lineTo(game.player.x + surfboardWidth/4, waterHeight - surfboardHeight/2);
-                ctx.stroke();
-                
-                // Draw surfer in paddling pose
-                ctx.fillStyle = '#FF6347';
-                
-                // Paddling animation
-                const paddleOffset = game.keysPressed[' '] ? Math.sin(game.frameCount * 0.2) * 5 : 0;
-                
-                ctx.fillRect(game.player.x - 20, waterHeight - 30, 40, 15); // Body
-                ctx.beginPath();
-                ctx.arc(game.player.x + 15, waterHeight - 22, 10, 0, Math.PI * 2); // Head
-                ctx.fill();
-                
-                // Arms in paddling motion
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = '#FF6347';
-                ctx.beginPath();
-                ctx.moveTo(game.player.x - 10, waterHeight - 22);
-                ctx.lineTo(game.player.x - 30, waterHeight - 22 + paddleOffset);
-                ctx.stroke();
-                
-                // Draw paddle splash when paddling
-                if (game.keysPressed[' '] && game.frameCount % 10 < 5) {
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.beginPath();
-                    ctx.arc(game.player.x - 30, waterHeight + paddleOffset, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            
-            // Draw UI
-            drawUI();
-        }
-        
-        // Draw UI elements
-        function drawUI() {
-            // Score and stats
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(10, 10, 200, 80);
-            
-            ctx.fillStyle = 'white';
-            ctx.font = '16px sans-serif';
-            ctx.textAlign = 'left';
-            ctx.fillText(`Score: ${game.score}`, 20, 30);
-            ctx.fillText(`Level: ${game.level}`, 20, 50);
-            ctx.fillText(`Wipeouts: ${game.wipeouts}`, 20, 70);
-            
-            // Paddle power bar
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(canvas.width - 210, 10, 200, 25);
-            
-            ctx.fillStyle = '#FFA500';
-            ctx.fillRect(canvas.width - 205, 15, game.player.paddlePower * 1.9, 15);
-            
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Paddle Power: ${Math.floor(game.player.paddlePower)}%`, canvas.width - 110, 28);
-            
-            // Balance indicator when on wave
-            if (game.player.onWave && !game.player.jumping) {
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(canvas.width / 2 - 100, 10, 200, 25);
-                
-                // Balance position (convert -1...1 to 0...190)
-                const balancePos = (game.player.balance + 1) * 95;
+                // Draw UI
+                // Score and info panel
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(10, 10, 150, 70);
                 
                 ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.rect(canvas.width / 2 - 100 + balancePos, 15, 10, 15);
-                ctx.fill();
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Score: ${game.score}`, 20, 30);
+                ctx.fillText(`Level: ${game.level}`, 20, 50);
+                ctx.fillText(`Wipeouts: ${game.wipeouts}`, 20, 70);
                 
-                ctx.textAlign = 'center';
-                ctx.fillText('Balance', canvas.width / 2, 50);
-                
-                // Draw balance danger zones
-                if (Math.abs(game.player.balance) > 0.7) {
-                    ctx.fillStyle = 'rgba(255,0,0,0.5)';
-                    ctx.fillText('CAUTION: BALANCE!', canvas.width / 2, 70);
+                // Paddle power meter
+                if (!game.player.onWave) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(canvas.width - 160, 10, 150, 20);
+                    
+                    ctx.fillStyle = '#FFA500';
+                    const powerWidth = (game.player.paddlePower / 100) * 140;
+                    ctx.fillRect(canvas.width - 155, 15, powerWidth, 10);
+                    
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Power: ${Math.floor(game.player.paddlePower)}%`, canvas.width - 85, 40);
                 }
-            }
-            
-            // Help text
-            if (!game.player.onWave) {
-                ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                ctx.font = '18px sans-serif';
+                
+                // Balance meter when surfing
+                if (game.player.onWave && !game.player.jumping) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(canvas.width - 160, 10, 150, 20);
+                    
+                    // Balance position indicator
+                    const balancePos = ((game.player.balance + 1) / 2) * 140;
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(canvas.width - 155 + balancePos, 15, 10, 10);
+                    
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Balance', canvas.width - 85, 40);
+                    
+                    // Show warning when close to wipeout
+                    if (Math.abs(game.player.balance) > 0.7) {
+                        ctx.fillStyle = 'red';
+                        ctx.fillText('!!! CAUTION !!!', canvas.width - 85, 60);
+                    }
+                }
+                
+                // Help text
+                ctx.fillStyle = 'white';
+                ctx.font = '14px Arial';
                 ctx.textAlign = 'center';
                 
-                if (game.player.paddlePower < 50) {
-                    ctx.fillText('Press SPACE to paddle and build power!', canvas.width / 2, canvas.height - 50);
-                } else if (game.bigWave.active && Math.abs(game.bigWave.x - game.player.x) < 150) {
-                    ctx.fillStyle = 'rgba(255,255,255,' + (0.5 + Math.sin(game.frameCount * 0.1) * 0.3) + ')';
-                    ctx.fillText('BIG WAVE COMING! Press UP ARROW to catch it!', canvas.width / 2, canvas.height - 50);
+                if (!game.player.onWave) {
+                    if (game.player.paddlePower < 50) {
+                        ctx.fillText('Press SPACE to paddle!', canvas.width / 2, 30);
+                    } else if (game.bigWave.active && Math.abs(game.bigWave.x - game.player.x) < 80) {
+                        ctx.fillText('Press UP to catch the wave!', canvas.width / 2, 30);
+                    }
                 } else {
-                    ctx.fillText('Press UP ARROW to catch a wave!', canvas.width / 2, canvas.height - 50);
+                    ctx.fillText(game.player.jumping ? 'Awesome jump!' : 'Use LEFT/RIGHT to balance!', canvas.width / 2, 30);
                 }
-            } else if (game.player.onWave && !game.player.jumping) {
-                ctx.fillStyle = 'rgba(255,255,255,0.8)';
-                ctx.font = '18px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('Press SPACE to jump! Use LEFT/RIGHT to balance!', canvas.width / 2, canvas.height - 50);
-            }
-        }
-        
-        // Game loop
-        function gameLoop() {
-            if (!game.paused) {
-                update();
-                draw();
             }
             
-            requestAnimationFrame(gameLoop);
-        }
-        
-        // Handle keyboard input
-        document.addEventListener('keydown', function(event) {
-            game.keysPressed[event.key] = true;
-            
-            // Prevent default for game keys
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(event.key)) {
-                event.preventDefault();
+            // Game loop
+            function gameLoop() {
+                if (game.active && !game.paused) {
+                    update();
+                    draw();
+                }
+                
+                requestAnimationFrame(gameLoop);
             }
-        });
-        
-        document.addEventListener('keyup', function(event) {
-            game.keysPressed[event.key] = false;
-        });
-        
-        // Initialize game
-        function init() {
+            
+            // Initialize keyboard controls
+            window.addEventListener('keydown', function(e) {
+                game.keysPressed[e.key] = true;
+                
+                // Prevent scrolling with space and arrow keys
+                if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            });
+            
+            window.addEventListener('keyup', function(e) {
+                game.keysPressed[e.key] = false;
+            });
+            
+            // Start the game
             generateWave();
-            createBigWave();
             gameLoop();
-        }
-        
-        // Start game
-        init();
+        });
     </script>
 </body>
 </html>
