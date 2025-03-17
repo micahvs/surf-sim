@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
-  output: 'export', // Add static export
 };
 
 export default nextConfig;
