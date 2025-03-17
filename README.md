@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Groovy Surf - Psychedelic Surfing Simulator
+
+Groovy Surf is an immersive, psychedelic surfing simulator built with Next.js, React Three Fiber, and TailwindCSS. Experience the thrill of riding cosmic waves in a vibrant, mind-expanding digital ocean.
+
+![Groovy Surf](https://via.placeholder.com/1200x600/4169E1/FFFFFF?text=Groovy+Surf+%E2%80%A2+Psychedelic+Surfing+Simulator)
+
+## Features
+
+- **3D Surfing Simulator**: Interactive environment with adjustable wave physics
+- **Wave Control Dashboard**: Customize wave parameters, swells, and sandbars
+- **Brand System**: Explore the psychedelic design system
+- **Model Control Protocol**: Technical documentation for wave modeling
+
+## Tech Stack
+
+- **Next.js 15**: Modern React framework with App Router
+- **React 19**: Component-based UI
+- **Three.js/React Three Fiber**: 3D graphics rendering
+- **TailwindCSS**: Utility-first styling
+- **Shadcn UI**: Component library
+- **TypeScript**: Type-safe code
 
 ## Getting Started
 
-First, run the development server:
+First, install the dependencies:
+
+```bash
+npm install
+```
+
+Then run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to experience Groovy Surf.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Home**: Landing page at `/`
+- **Simulator**: 3D surfing environment at `/simulator`
+- **Dashboard**: Wave parameter controls at `/dashboard`
+- **Brand**: Design system at `/brand`
+- **MCP**: Technical docs at `/mcp`
 
-## Learn More
+## Documentation
 
-To learn more about Next.js, take a look at the following resources:
+For detailed documentation, see [DOCUMENTATION.md](./DOCUMENTATION.md).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+For development commands and tips, see [CLAUDE.md](./CLAUDE.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Credits
 
-## Deploy on Vercel
+This project is a psychedelic exploration of wave physics, 3D graphics, and immersive web experiences.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Built with Next.js, React Three Fiber, and a groovy state of mind.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT

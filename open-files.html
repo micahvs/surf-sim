@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Groovy Surf - File Launcher</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #4b0082, #800080, #9400d3);
+      color: white;
+      padding: 2rem;
+      line-height: 1.6;
+      margin: 0;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: rgba(0,0,0,0.3);
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      background: linear-gradient(to right, #ffcc00, #ff66cc, #cc33ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding-bottom: 0.5rem;
+      margin-top: 2rem;
+    }
+    
+    .page-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    .page-button {
+      display: block;
+      padding: 1rem;
+      background: linear-gradient(to right, #ff3366, #ff6633);
+      color: white;
+      text-decoration: none;
+      text-align: center;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .page-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .note {
+      background-color: rgba(255,255,255,0.1);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+    
+    .note strong {
+      color: #ffcc00;
+    }
+    
+    .static-paths {
+      display: none;
+      font-family: monospace;
+      background-color: rgba(0,0,0,0.3);
+      padding: 1rem;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      margin-top: 1rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .toggle-paths {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.5);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .toggle-paths:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Groovy Surf - File Launcher</h1>
+    
+    <p>
+      This launcher will help you open the static HTML files directly in your browser.
+      Choose a page below to view:
+    </p>
+    
+    <h2>Main Pages</h2>
+    <div class="page-list">
+      <button class="page-button" onclick="openPage('index')">Home Page</button>
+      <button class="page-button" onclick="openPage('simulator')">Simulator</button>
+      <button class="page-button" onclick="openPage('dashboard')">Wave Dashboard</button>
+      <button class="page-button" onclick="openPage('brand')">Brand Specs</button>
+      <button class="page-button" onclick="openPage('mcp')">MCP Documentation</button>
+    </div>
+    
+    <div class="note">
+      <strong>Note:</strong> When viewing these pages directly as files, navigation between pages won't work properly.
+      Each page needs to be opened individually from this launcher. Some interactive features may be limited
+      when viewing as static files.
+    </div>
+    
+    <button class="toggle-paths" onclick="togglePaths()">Show/Hide File Paths</button>
+    <div id="staticPaths" class="static-paths"></div>
+  </div>
+
+  <script>
+    // Get the base directory
+    const basePath = window.location.pathname.replace('/open-files.html', '/out');
+    const fullPath = window.location.href.replace('/open-files.html', '/out');
+    
+    // Function to open a page
+    function openPage(pageName) {
+      const url = `file://${fullPath}/${pageName}.html`;
+      window.open(url, '_blank');
+    }
+    
+    // Toggle path display
+    function togglePaths() {
+      const pathsElement = document.getElementById('staticPaths');
+      if (pathsElement.style.display === 'block') {
+        pathsElement.style.display = 'none';
+      } else {
+        pathsElement.style.display = 'block';
+        pathsElement.textContent = `Base directory: ${basePath}\n\nFull paths:\n- Home: ${fullPath}/index.html\n- Simulator: ${fullPath}/simulator.html\n- Dashboard: ${fullPath}/dashboard.html\n- Brand: ${fullPath}/brand.html\n- MCP: ${fullPath}/mcp.html`;
+      }
+    }
+  </script>
+</body>
+</html>
