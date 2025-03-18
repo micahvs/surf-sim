@@ -1,17 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { SurfingSimulator } from "@/components/surfing-simulator"
-import { Home, Settings, Volume2, VolumeX, RotateCcw, PauseCircle, PlayCircle } from "lucide-react"
+import { AudioProvider, useAudio } from "@/components/audio-effects"
+import { Home, Settings, Volume2, VolumeX, RotateCcw, PauseCircle, PlayCircle, ChevronUp, ChevronDown } from "lucide-react"
 
-export default function SimulatorPage() {
+function SimulatorContent() {
   const [isPaused, setIsPaused] = useState(false)
-  const [isMuted, setIsMuted] = useState(false)
-  const [waveIntensity, setWaveIntensity] = useState(50)
-  const [psychedelicLevel, setPsychedelicLevel] = useState(70)
+  const [waveIntensity, setWaveIntensity] = useState(60)
+  const [psychedelicLevel, setPsychedelicLevel] = useState(80)
+  const [showAdvancedControls, setShowAdvancedControls] = useState(false)
+  const [volume, setVolume] = useState(80)
+  const { isMuted, setMuted, toggleMusic, isMusicPlaying, adjustVolume } = useAudio()
+  
+  // Start music when component mounts
+  useEffect(() => {
+    if (!isMusicPlaying) {
+      toggleMusic()
+    }
+  }, [isMusicPlaying, toggleMusic])
+  
+  // Adjust volume when volume slider changes
+  useEffect(() => {
+    adjustVolume(volume / 100)
+  }, [volume, adjustVolume])
 
   return (
     <div className="relative w-full h-screen bg-black">
@@ -40,13 +55,27 @@ export default function SimulatorPage() {
                 variant="ghost"
                 size="icon"
                 className="text-white hover:bg-white/20"
-                onClick={() => setIsMuted(!isMuted)}
+                onClick={() => setMuted(!isMuted)}
               >
                 {isMuted ? <VolumeX /> : <Volume2 />}
               </Button>
 
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-white/20"
+                onClick={() => window.location.reload()}
+              >
                 <RotateCcw />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20"
+                onClick={() => setShowAdvancedControls(!showAdvancedControls)}
+              >
+                {showAdvancedControls ? <ChevronDown /> : <ChevronUp />}
               </Button>
             </div>
 
@@ -87,6 +116,58 @@ export default function SimulatorPage() {
                 className="flex-1"
               />
             </div>
+            
+            {showAdvancedControls && (
+              <>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-white">Volume</span>
+                  <Slider
+                    value={[volume]}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onValueChange={(value) => setVolume(value[0])}
+                    className="flex-1"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-white border-white/40 hover:bg-white/20 hover:text-white"
+                    onClick={() => setPsychedelicLevel(100)}
+                  >
+                    Max Trip
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-white border-white/40 hover:bg-white/20 hover:text-white"
+                    onClick={() => setWaveIntensity(100)}
+                  >
+                    Epic Waves
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-white border-white/40 hover:bg-white/20 hover:text-white"
+                    onClick={() => {
+                      setWaveIntensity(60);
+                      setPsychedelicLevel(80);
+                    }}
+                  >
+                    Reset Settings
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="mt-2 text-center text-xs text-white/60">
+            Use arrow keys to move | Space to jump | Try Left+Right or Up+Down in mid-air for tricks!
           </div>
         </div>
       </div>
@@ -94,3 +175,10 @@ export default function SimulatorPage() {
   )
 }
 
+export default function SimulatorPage() {
+  return (
+    <AudioProvider>
+      <SimulatorContent />
+    </AudioProvider>
+  )
+}

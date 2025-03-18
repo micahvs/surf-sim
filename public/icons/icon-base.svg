@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#grad1)"/>
+  
+  <!-- Wavy water -->
+  <path d="M96 306C96 306 160 266 256 306C352 346 416 306 416 306V416H96V306Z" fill="url(#water)"/>
+  
+  <!-- Stylized surfboard -->
+  <path d="M192 236C176 276 192 356 256 356C320 356 336 276 320 236L256 136L192 236Z" fill="url(#surfboard)"/>
+  
+  <!-- Psychedelic sun -->
+  <circle cx="116" cy="146" r="36" fill="url(#sun)"/>
+  <path d="M116 100V110M116 182V192M70 146H80M152 146H162M79 109L89 119M143 173L153 183M79 183L89 173M143 119L153 109" stroke="#FFDD00" stroke-width="6"/>
+  
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="grad1" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4B0082"/>
+      <stop offset="1" stop-color="#9400D3"/>
+    </linearGradient>
+    
+    <linearGradient id="water" x1="256" y1="290" x2="256" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1E90FF"/>
+      <stop offset="1" stop-color="#0000CD"/>
+    </linearGradient>
+    
+    <linearGradient id="surfboard" x1="256" y1="136" x2="256" y2="356" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF69B4"/>
+      <stop offset="1" stop-color="#FF1493"/>
+    </linearGradient>
+    
+    <linearGradient id="sun" x1="92" y1="128" x2="140" y2="164" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFF00"/>
+      <stop offset="1" stop-color="#FFA500"/>
+    </linearGradient>
+  </defs>
+</svg>
